@@ -89,6 +89,9 @@ class ZeroShotTasks(foo.Operator):
             icon="/assets/icon.svg",
         )
 
+    def resolve_delegation(self, ctx):
+        return True
+
     def resolve_input(self, ctx):
         inputs = types.Object()
 
@@ -264,6 +267,9 @@ class ZeroShotClassify(foo.Operator):
             icon="/assets/icon.svg",
         )
 
+    def resolve_delegation(self, ctx):
+        return True
+
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "classification")
         return types.Property(inputs)
@@ -281,6 +287,9 @@ class ZeroShotDetect(foo.Operator):
             dynamic=True,
             icon="/assets/icon.svg",
         )
+
+    def resolve_delegation(self, ctx):
+        return True
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "detection")
@@ -300,6 +309,9 @@ class ZeroShotInstanceSegment(foo.Operator):
             icon="/assets/icon.svg",
         )
 
+    def resolve_delegation(self, ctx):
+        return True
+
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "instance_segmentation")
         return types.Property(inputs)
@@ -317,6 +329,9 @@ class ZeroShotSemanticSegment(foo.Operator):
             dynamic=True,
             icon="/assets/icon.svg",
         )
+
+    def resolve_delegation(self, ctx):
+        return True
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "semantic_segmentation")
