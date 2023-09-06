@@ -70,6 +70,33 @@ CLASSIFICATION_MODELS = {
 fiftyone plugins download https://github.com/jacobmarks/zero-shot-prediction-plugin
 ```
 
+## Usage
+
+All of the operators in this plugin are _delegated_ operators. This means that instead of waiting for the operator to finish, you _schedule_
+the operation to be performed separately. This is useful for long-running operations, such as performing inference on a large dataset.
+
+Once you have pressed the `Schedule` button for the operator, you will be able to see the job from the command line using FiftyOne's [command line interface](https://docs.voxel51.com/cli/index.html#fiftyone-delegated-operations):
+
+```shell
+fiftyone delegated list
+```
+
+will show you the status of all delegated operations.
+
+To launch a service which runs the operation, as well as any other delegated operations that have been scheduled, run:
+
+```shell
+fiftyone delegated launch
+```
+
+Once the operation has completed, you can view the results in the App (upon refresh).
+
+After the operation completes, you can also clean up your list of delegated operations by running:
+
+```shell
+fiftyone delegated cleanup -s COMPLETED
+```
+
 ## Operators
 
 ### `zero_shot_predict`
