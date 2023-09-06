@@ -8,6 +8,7 @@
 from fiftyone.core.models import Model
 import fiftyone.zoo as foz
 
+
 class CLIPZeroShotModel(Model):
     def __init__(self, config):
         cats = config.get("categories", None)
@@ -16,7 +17,7 @@ class CLIPZeroShotModel(Model):
             text_prompt="A photo of a",
             classes=cats,
         )
-    
+
     @property
     def media_type(self):
         return "image"
@@ -26,11 +27,10 @@ class CLIPZeroShotModel(Model):
 
     def predict_all(self, samples, args):
         return self.model.predict_all(samples, args)
-    
+
 
 def CLIP_activator():
     return True
-
 
 
 CLASSIFICATION_MODELS = {

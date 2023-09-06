@@ -18,33 +18,43 @@ class CLIPSegZeroShotModel(Model):
         self.candidate_labels = config.get("categories", None)
 
         from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
-        self.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-        self.model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined")
-    
+
+        self.processor = CLIPSegProcessor.from_pretrained(
+            "CIDAS/clipseg-rd64-refined"
+        )
+        self.model = CLIPSegForImageSegmentation.from_pretrained(
+            "CIDAS/clipseg-rd64-refined"
+        )
+
     @property
     def media_type(self):
-        return "image"    
+        return "image"
 
     def _predict(self, image):
-        inputs = self.processor(text=self.candidate_labels, images=[image] * len(self.candidate_labels), padding="max_length", return_tensors="pt")
+        inputs = self.processor(
+            text=self.candidate_labels,
+            images=[image] * len(self.candidate_labels),
+            padding="max_length",
+            return_tensors="pt",
+        )
         with torch.no_grad():
             outputs = self.model(**inputs)
         preds = outputs.logits.unsqueeze(1)
+        # pylint: disable=no-member
         mask = torch.argmax(preds, dim=0).squeeze().numpy()
         return fo.Segmentation(mask=mask)
-    
+
     def predict(self, args):
         image = Image.fromarray(args)
         predictions = self._predict(image)
         return predictions
- 
+
     def predict_all(self, samples, args):
         pass
 
 
 def CLIPSeg_activator():
     return find_spec("transformers") is not None
-
 
 
 SEMANTIC_SEGMENTATION_MODELS = {
@@ -60,7 +70,9 @@ def _get_model(model_name, config):
     return SEMANTIC_SEGMENTATION_MODELS[model_name]["model"](config)
 
 
-def run_zero_shot_semantic_segmentation(dataset, model_name, label_field, categories):
+def run_zero_shot_semantic_segmentation(
+    dataset, model_name, label_field, categories
+):
     if "other" not in categories:
         categories.append("other")
     config = {"categories": categories}

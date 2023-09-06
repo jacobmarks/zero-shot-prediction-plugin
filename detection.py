@@ -19,11 +19,11 @@ class OwlViTZeroShotModel(Model):
         self.candidate_labels = config.get("categories", None)
 
         from transformers import pipeline
+
         self.model = pipeline(
-            model=self.checkpoint, 
-            task="zero-shot-object-detection"
-            )
-    
+            model=self.checkpoint, task="zero-shot-object-detection"
+        )
+
     @property
     def media_type(self):
         return "image"
@@ -34,18 +34,25 @@ class OwlViTZeroShotModel(Model):
         return predictions
 
     def _predict(self, image):
-        raw_predictions = self.model(image, candidate_labels=self.candidate_labels)
+        raw_predictions = self.model(
+            image, candidate_labels=self.candidate_labels
+        )
 
         size = image.size
         w, h = size[0], size[1]
 
         detections = []
         for prediction in raw_predictions:
-            score, box = prediction['score'], prediction['box']
-            bounding_box = [box['xmin']/w, box['ymin']/h, box['xmax']/w, box['ymax']/h]
+            score, box = prediction["score"], prediction["box"]
+            bounding_box = [
+                box["xmin"] / w,
+                box["ymin"] / h,
+                box["xmax"] / w,
+                box["ymax"] / h,
+            ]
             bounding_box[2] = bounding_box[2] - bounding_box[0]
             bounding_box[3] = bounding_box[3] - bounding_box[1]
-            label = prediction['label']
+            label = prediction["label"]
 
             detection = fo.Detection(
                 label=label,
@@ -55,14 +62,13 @@ class OwlViTZeroShotModel(Model):
             detections.append(detection)
 
         return fo.Detections(detections=detections)
- 
+
     def predict_all(self, samples, args):
         pass
 
 
 def OwlViT_activator():
     return find_spec("transformers") is not None
-
 
 
 DETECTION_MODELS = {

@@ -17,7 +17,10 @@ from fiftyone.operators import types
 
 with add_sys_path(os.path.dirname(os.path.abspath(__file__))):
     # pylint: disable=no-name-in-module,import-error
-    from classification import run_zero_shot_classification, CLASSIFICATION_MODELS
+    from classification import (
+        run_zero_shot_classification,
+        CLASSIFICATION_MODELS,
+    )
     from detection import run_zero_shot_detection, DETECTION_MODELS
     from instance_segmentation import (
         run_zero_shot_instance_segmentation,
@@ -60,9 +63,9 @@ def _get_labels(ctx):
     else:
         labels_file = ctx.params.get("labels_file", None).strip()
         decoded_bytes = base64.b64decode(labels_file.split(",")[1])
-        labels = decoded_bytes.decode('utf-8')
+        labels = decoded_bytes.decode("utf-8")
         return [label.strip() for label in labels.split("\n")]
-        
+
 
 TASK_TO_FUNCTION = {
     "classification": run_zero_shot_classification,
@@ -74,7 +77,6 @@ TASK_TO_FUNCTION = {
 
 def run_zero_shot_task(dataset, task, model_name, label_field, categories):
     return TASK_TO_FUNCTION[task](dataset, model_name, label_field, categories)
-
 
 
 class ZeroShotTasks(foo.Operator):
@@ -92,8 +94,12 @@ class ZeroShotTasks(foo.Operator):
         radio_choices = types.RadioGroup()
         radio_choices.add_choice("classification", label="Classification")
         radio_choices.add_choice("detection", label="Detection")
-        radio_choices.add_choice("instance_segmentation", label="Instance Segmentation")
-        radio_choices.add_choice("semantic_segmentation", label="Semantic Segmentation")
+        radio_choices.add_choice(
+            "instance_segmentation", label="Instance Segmentation"
+        )
+        radio_choices.add_choice(
+            "semantic_segmentation", label="Semantic Segmentation"
+        )
         inputs.enum(
             "task_choices",
             radio_choices.values(),
@@ -102,10 +108,9 @@ class ZeroShotTasks(foo.Operator):
             view=radio_choices,
         )
 
-
         chosen_task = ctx.params.get("task_choices", "classification")
         active_models = _get_active_models(chosen_task)
-            
+
         if len(active_models) == 0:
             inputs.str(
                 "no_models_warning",
@@ -115,12 +120,18 @@ class ZeroShotTasks(foo.Operator):
                 ),
             )
             return types.Property(inputs)
-        
-        model_dropdown = types.Dropdown(label=f"{chosen_task.capitalize()} Model")
+
+        model_dropdown = types.Dropdown(
+            label=f"{chosen_task.capitalize()} Model"
+        )
         for model in active_models:
             model_dropdown.add_choice(model, label=model)
-        inputs.enum("model_choice", model_dropdown.values(), default=model_dropdown.choices[0].value, view=model_dropdown)
-
+        inputs.enum(
+            "model_choice",
+            model_dropdown.values(),
+            default=model_dropdown.choices[0].value,
+            view=model_dropdown,
+        )
 
         label_input_choices = types.RadioGroup()
         label_input_choices.add_choice("direct", label="Input directly")
@@ -134,13 +145,29 @@ class ZeroShotTasks(foo.Operator):
         )
 
         if ctx.params.get("label_input_choices", False) == "direct":
-            inputs.str("labels", label="Labels", description = "Enter the names of the classes you wish to generate predictions for, separated by commas", required=True)
+            inputs.str(
+                "labels",
+                label="Labels",
+                description="Enter the names of the classes you wish to generate predictions for, separated by commas",
+                required=True,
+            )
         else:
             labels_file = types.FileView(label="Labels File")
-            inputs.str("labels_file", label="Labels File", required=True, view=labels_file)
+            inputs.str(
+                "labels_file",
+                label="Labels File",
+                required=True,
+                view=labels_file,
+            )
 
         model_name = ctx.params.get("model_choice", "CLIP")
-        inputs.str("label_field", label="Label Field", default=model_name, description="The field to store the predicted labels in", required=True)
+        inputs.str(
+            "label_field",
+            label="Label Field",
+            default=model_name,
+            description="The field to store the predicted labels in",
+            required=True,
+        )
         return types.Property(inputs)
 
     def execute(self, ctx):
