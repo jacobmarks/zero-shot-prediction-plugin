@@ -86,6 +86,7 @@ class ZeroShotTasks(foo.Operator):
             name="zero_shot_predict",
             label="Perform Zero Shot Prediction",
             dynamic=True,
+            icon="/assets/icon.svg",
         )
 
     def resolve_input(self, ctx):
@@ -260,6 +261,7 @@ class ZeroShotClassify(foo.Operator):
             name="zero_shot_classify",
             label="Perform Zero Shot Classification",
             dynamic=True,
+            icon="/assets/icon.svg",
         )
 
     def resolve_input(self, ctx):
@@ -277,6 +279,7 @@ class ZeroShotDetect(foo.Operator):
             name="zero_shot_detect",
             label="Perform Zero Shot Detection",
             dynamic=True,
+            icon="/assets/icon.svg",
         )
 
     def resolve_input(self, ctx):
@@ -294,6 +297,7 @@ class ZeroShotInstanceSegment(foo.Operator):
             name="zero_shot_instance_segment",
             label="Perform Zero Shot Instance Segmentation",
             dynamic=True,
+            icon="/assets/icon.svg",
         )
 
     def resolve_input(self, ctx):
@@ -311,6 +315,7 @@ class ZeroShotSemanticSegment(foo.Operator):
             name="zero_shot_semantic_segment",
             label="Perform Zero Shot Semantic Segmentation",
             dynamic=True,
+            icon="/assets/icon.svg",
         )
 
     def resolve_input(self, ctx):
