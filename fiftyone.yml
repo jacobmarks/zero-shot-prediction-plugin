@@ -6,3 +6,7 @@ description: "Run zero-shot (open vocabulary) prediction on your data!"
 url: "https://github.com/jacobmarks/zero-shot-predictions-plugin/blob/main/README.md"
 operators:
   - zero_shot_predict
+  - zero_shot_classify
+  - zero_shot_detect
+  - zero_shot_instance_segment
+  - zero_shot_semantic_segment

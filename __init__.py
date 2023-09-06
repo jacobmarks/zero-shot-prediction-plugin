@@ -180,5 +180,150 @@ class ZeroShotTasks(foo.Operator):
         ctx.trigger("reload_dataset")
 
 
+### Common input control flow for all tasks
+def _input_control_flow(ctx, task):
+    inputs = types.Object()
+    active_models = _get_active_models(task)
+    if len(active_models) == 0:
+        inputs.str(
+            "no_models_warning",
+            view=types.Warning(
+                label=f"No Models Found",
+                description="No models were found for the selected task. Please install the required libraries.",
+            ),
+        )
+        return types.Property(inputs)
+
+    model_dropdown = types.Dropdown(label=f"{task.capitalize()} Model")
+    for model in active_models:
+        model_dropdown.add_choice(model, label=model)
+    inputs.enum(
+        "model_choice",
+        model_dropdown.values(),
+        default=model_dropdown.choices[0].value,
+        view=model_dropdown,
+    )
+
+    label_input_choices = types.RadioGroup()
+    label_input_choices.add_choice("direct", label="Input directly")
+    label_input_choices.add_choice("file", label="Input from file")
+    inputs.enum(
+        "label_input_choices",
+        label_input_choices.values(),
+        default=label_input_choices.choices[0].value,
+        label="Labels",
+        view=label_input_choices,
+    )
+
+    if ctx.params.get("label_input_choices", False) == "direct":
+        inputs.str(
+            "labels",
+            label="Labels",
+            description="Enter the names of the classes you wish to generate predictions for, separated by commas",
+            required=True,
+        )
+    else:
+        labels_file = types.FileView(label="Labels File")
+        inputs.str(
+            "labels_file",
+            label="Labels File",
+            required=True,
+            view=labels_file,
+        )
+
+    model_name = ctx.params.get(
+        "model_choice", model_dropdown.choices[0].value
+    )
+    inputs.str(
+        "label_field",
+        label="Label Field",
+        default=model_name.lower().replace(" ", "_"),
+        description="The field to store the predicted labels in",
+        required=True,
+    )
+    return inputs
+
+
+def _execute_control_flow(ctx, task):
+    dataset = ctx.dataset
+    model_name = ctx.params.get("model_choice", "CLIP")
+    categories = _get_labels(ctx)
+    label_field = ctx.params.get("label_field", model_name)
+    run_zero_shot_task(dataset, task, model_name, label_field, categories)
+    ctx.trigger("reload_dataset")
+
+
+class ZeroShotClassify(foo.Operator):
+    @property
+    def config(self):
+        return foo.OperatorConfig(
+            name="zero_shot_classify",
+            label="Perform Zero Shot Classification",
+            dynamic=True,
+        )
+
+    def resolve_input(self, ctx):
+        inputs = _input_control_flow(ctx, "classification")
+        return types.Property(inputs)
+
+    def execute(self, ctx):
+        _execute_control_flow(ctx, "classification")
+
+
+class ZeroShotDetect(foo.Operator):
+    @property
+    def config(self):
+        return foo.OperatorConfig(
+            name="zero_shot_detect",
+            label="Perform Zero Shot Detection",
+            dynamic=True,
+        )
+
+    def resolve_input(self, ctx):
+        inputs = _input_control_flow(ctx, "detection")
+        return types.Property(inputs)
+
+    def execute(self, ctx):
+        _execute_control_flow(ctx, "detection")
+
+
+class ZeroShotInstanceSegment(foo.Operator):
+    @property
+    def config(self):
+        return foo.OperatorConfig(
+            name="zero_shot_instance_segment",
+            label="Perform Zero Shot Instance Segmentation",
+            dynamic=True,
+        )
+
+    def resolve_input(self, ctx):
+        inputs = _input_control_flow(ctx, "instance_segmentation")
+        return types.Property(inputs)
+
+    def execute(self, ctx):
+        _execute_control_flow(ctx, "instance_segmentation")
+
+
+class ZeroShotSemanticSegment(foo.Operator):
+    @property
+    def config(self):
+        return foo.OperatorConfig(
+            name="zero_shot_semantic_segment",
+            label="Perform Zero Shot Semantic Segmentation",
+            dynamic=True,
+        )
+
+    def resolve_input(self, ctx):
+        inputs = _input_control_flow(ctx, "semantic_segmentation")
+        return types.Property(inputs)
+
+    def execute(self, ctx):
+        _execute_control_flow(ctx, "semantic_segmentation")
+
+
 def register(plugin):
     plugin.register(ZeroShotTasks)
+    plugin.register(ZeroShotClassify)
+    plugin.register(ZeroShotDetect)
+    plugin.register(ZeroShotInstanceSegment)
+    plugin.register(ZeroShotSemanticSegment)
