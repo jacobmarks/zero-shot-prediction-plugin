@@ -82,12 +82,13 @@ def run_zero_shot_task(dataset, task, model_name, label_field, categories):
 class ZeroShotTasks(foo.Operator):
     @property
     def config(self):
-        return foo.OperatorConfig(
+        _config = foo.OperatorConfig(
             name="zero_shot_predict",
             label="Perform Zero Shot Prediction",
             dynamic=True,
-            icon="/assets/icon.svg",
         )
+        _config.icon = "/assets/icon.svg"
+        return _config
 
     def resolve_delegation(self, ctx):
         return True
@@ -260,12 +261,13 @@ def _execute_control_flow(ctx, task):
 class ZeroShotClassify(foo.Operator):
     @property
     def config(self):
-        return foo.OperatorConfig(
+        _config = foo.OperatorConfig(
             name="zero_shot_classify",
             label="Perform Zero Shot Classification",
             dynamic=True,
-            icon="/assets/icon.svg",
         )
+        _config.icon = "/assets/icon.svg"
+        return _config
 
     def resolve_delegation(self, ctx):
         return True
@@ -281,12 +283,13 @@ class ZeroShotClassify(foo.Operator):
 class ZeroShotDetect(foo.Operator):
     @property
     def config(self):
-        return foo.OperatorConfig(
+        _config = foo.OperatorConfig(
             name="zero_shot_detect",
             label="Perform Zero Shot Detection",
             dynamic=True,
-            icon="/assets/icon.svg",
         )
+        _config.icon = "/assets/icon.svg"
+        return _config
 
     def resolve_delegation(self, ctx):
         return True
@@ -302,12 +305,13 @@ class ZeroShotDetect(foo.Operator):
 class ZeroShotInstanceSegment(foo.Operator):
     @property
     def config(self):
-        return foo.OperatorConfig(
+        _config = foo.OperatorConfig(
             name="zero_shot_instance_segment",
             label="Perform Zero Shot Instance Segmentation",
             dynamic=True,
-            icon="/assets/icon.svg",
         )
+        _config.icon = "/assets/icon.svg"
+        return _config
 
     def resolve_delegation(self, ctx):
         return True
@@ -323,12 +327,13 @@ class ZeroShotInstanceSegment(foo.Operator):
 class ZeroShotSemanticSegment(foo.Operator):
     @property
     def config(self):
-        return foo.OperatorConfig(
+        _config = foo.OperatorConfig(
             name="zero_shot_semantic_segment",
             label="Perform Zero Shot Semantic Segmentation",
             dynamic=True,
-            icon="/assets/icon.svg",
         )
+        _config.icon = "/assets/icon.svg"
+        return _config
 
     def resolve_delegation(self, ctx):
         return True
