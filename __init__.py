@@ -7,10 +7,7 @@
 
 import os
 import base64
-import sys
 
-import fiftyone as fo
-import fiftyone.core.utils as fou
 from fiftyone.core.utils import add_sys_path
 import fiftyone.operators as foo
 from fiftyone.operators import types
