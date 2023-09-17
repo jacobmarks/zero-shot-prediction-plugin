@@ -70,6 +70,12 @@ CLASSIFICATION_MODELS = {
 fiftyone plugins download https://github.com/jacobmarks/zero-shot-prediction-plugin
 ```
 
+If you want to use Owl-ViT or CLIPSeg, you will also need to install the `transformers` library:
+
+```shell
+pip install transformers
+```
+
 ## Usage
 
 All of the operators in this plugin are _delegated_ operators. This means that instead of waiting for the operator to finish, you _schedule_
