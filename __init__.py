@@ -45,6 +45,84 @@ MODEL_LISTS = {
 }
 
 
+def _execution_mode(ctx, inputs):
+    delegate = ctx.params.get("delegate", False)
+
+    if delegate:
+        description = "Uncheck this box to execute the operation immediately"
+    else:
+        description = "Check this box to delegate execution of this task"
+
+    inputs.bool(
+        "delegate",
+        default=False,
+        required=True,
+        label="Delegate execution?",
+        description=description,
+        view=types.CheckboxView(),
+    )
+
+    if delegate:
+        inputs.view(
+            "notice",
+            types.Notice(
+                label=(
+                    "You've chosen delegated execution. Note that you must "
+                    "have a delegated operation service running in order for "
+                    "this task to be processed. See "
+                    "https://docs.voxel51.com/plugins/index.html#operators "
+                    "for more information"
+                )
+            ),
+        )
+
+
+def _list_target_views(ctx, inputs):
+    has_view = ctx.view != ctx.dataset.view()
+    has_selected = bool(ctx.selected)
+    default_target = None
+    if has_view or has_selected:
+        target_choices = types.RadioGroup()
+        target_choices.add_choice(
+            "DATASET",
+            label="Entire dataset",
+            description="Merge labels for the entire dataset",
+        )
+
+        if has_view:
+            target_choices.add_choice(
+                "CURRENT_VIEW",
+                label="Current view",
+                description="Merge labels for the current view",
+            )
+            default_target = "CURRENT_VIEW"
+
+        if has_selected:
+            target_choices.add_choice(
+                "SELECTED_SAMPLES",
+                label="Selected samples",
+                description="Merge labels for the selected samples",
+            )
+            default_target = "SELECTED_SAMPLES"
+
+        inputs.enum(
+            "target",
+            target_choices.values(),
+            default=default_target,
+            view=target_choices,
+        )
+
+
+def _get_target_view(ctx, target):
+    if target == "SELECTED_SAMPLES":
+        return ctx.view.select(ctx.selected)
+
+    if target == "DATASET":
+        return ctx.dataset
+
+    return ctx.view
+
+
 def _get_active_models(task):
     ams = []
     for element in MODEL_LISTS[task].values():
@@ -88,7 +166,7 @@ class ZeroShotTasks(foo.Operator):
         return _config
 
     def resolve_delegation(self, ctx):
-        return True
+        return ctx.params.get("delegate", False)
 
     def resolve_input(self, ctx):
         inputs = types.Object()
@@ -170,15 +248,19 @@ class ZeroShotTasks(foo.Operator):
             description="The field to store the predicted labels in",
             required=True,
         )
+        _execution_mode(ctx, inputs)
+        _list_target_views(ctx, inputs)
         return types.Property(inputs)
 
     def execute(self, ctx):
-        dataset = ctx.dataset
+        # dataset = ctx.dataset
+        view = _get_target_view(ctx, ctx.params["target"])
+
         task = ctx.params.get("task_choices", "classification")
         model_name = ctx.params.get("model_choice", "CLIP")
         categories = _get_labels(ctx)
         label_field = ctx.params.get("label_field", model_name)
-        run_zero_shot_task(dataset, task, model_name, label_field, categories)
+        run_zero_shot_task(view, task, model_name, label_field, categories)
         ctx.trigger("reload_dataset")
 
 
@@ -243,15 +325,18 @@ def _input_control_flow(ctx, task):
         description="The field to store the predicted labels in",
         required=True,
     )
+    _execution_mode(ctx, inputs)
+    _list_target_views(ctx, inputs)
     return inputs
 
 
 def _execute_control_flow(ctx, task):
-    dataset = ctx.dataset
+    # dataset = ctx.dataset
+    view = _get_target_view(ctx, ctx.params["target"])
     model_name = ctx.params.get("model_choice", "CLIP")
     categories = _get_labels(ctx)
     label_field = ctx.params.get("label_field", model_name)
-    run_zero_shot_task(dataset, task, model_name, label_field, categories)
+    run_zero_shot_task(view, task, model_name, label_field, categories)
     ctx.trigger("reload_dataset")
 
 
@@ -267,7 +352,7 @@ class ZeroShotClassify(foo.Operator):
         return _config
 
     def resolve_delegation(self, ctx):
-        return True
+        return ctx.params.get("delegate", False)
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "classification")
@@ -289,7 +374,7 @@ class ZeroShotDetect(foo.Operator):
         return _config
 
     def resolve_delegation(self, ctx):
-        return True
+        return ctx.params.get("delegate", False)
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "detection")
@@ -311,7 +396,7 @@ class ZeroShotInstanceSegment(foo.Operator):
         return _config
 
     def resolve_delegation(self, ctx):
-        return True
+        return ctx.params.get("delegate", False)
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "instance_segmentation")
@@ -333,7 +418,7 @@ class ZeroShotSemanticSegment(foo.Operator):
         return _config
 
     def resolve_delegation(self, ctx):
-        return True
+        return ctx.params.get("delegate", False)
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "semantic_segmentation")
