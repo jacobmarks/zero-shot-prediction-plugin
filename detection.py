@@ -50,8 +50,16 @@ class OwlViTZeroShotModel(Model):
                 box["xmax"] / w,
                 box["ymax"] / h,
             ]
+            ### constrain bounding box to [0, 1]
+            bounding_box[0] = max(0, bounding_box[0])
+            bounding_box[1] = max(0, bounding_box[1])
+            bounding_box[2] = min(1, bounding_box[2])
+            bounding_box[3] = min(1, bounding_box[3])
+
+            ### convert to (x, y, w, h)
             bounding_box[2] = bounding_box[2] - bounding_box[0]
             bounding_box[3] = bounding_box[3] - bounding_box[1]
+
             label = prediction["label"]
 
             detection = fo.Detection(
