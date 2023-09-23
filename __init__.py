@@ -156,6 +156,12 @@ def run_zero_shot_task(dataset, task, model_name, label_field, categories):
     return TASK_TO_FUNCTION[task](dataset, model_name, label_field, categories)
 
 
+def _model_name_to_field_name(model_name):
+    return (
+        model_name.lower().replace(" ", "_").replace("_+", "").replace("-", "")
+    )
+
+
 class ZeroShotTasks(foo.Operator):
     @property
     def config(self):
@@ -209,7 +215,7 @@ class ZeroShotTasks(foo.Operator):
         for model in active_models:
             model_dropdown.add_choice(model, label=model)
         inputs.enum(
-            "model_choice",
+            f"model_choice_{chosen_task}",
             model_dropdown.values(),
             default=model_dropdown.choices[0].value,
             view=model_dropdown,
@@ -242,11 +248,13 @@ class ZeroShotTasks(foo.Operator):
                 view=labels_file,
             )
 
-        model_name = ctx.params.get("model_choice", "CLIP")
+        model_name = ctx.params.get(
+            f"model_choice_{chosen_task}", active_models[0]
+        )
         inputs.str(
-            "label_field",
+            f"label_field_{chosen_task}_{model_name}",
             label="Label Field",
-            default=model_name,
+            default=_model_name_to_field_name(model_name),
             description="The field to store the predicted labels in",
             required=True,
         )
@@ -257,9 +265,11 @@ class ZeroShotTasks(foo.Operator):
     def execute(self, ctx):
         view = _get_target_view(ctx, ctx.params["target"])
         task = ctx.params.get("task_choices", "classification")
-        model_name = ctx.params.get("model_choice", "CLIP")
+        model_name = ctx.params.get(f"model_choice_{task}", "CLIP")
         categories = _get_labels(ctx)
-        label_field = ctx.params.get("label_field", model_name)
+        label_field = ctx.params.get(
+            f"label_field_{task}_{model_name}", model_name
+        )
         run_zero_shot_task(view, task, model_name, label_field, categories)
         ctx.trigger("reload_dataset")
 
