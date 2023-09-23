@@ -80,7 +80,7 @@ def _execution_mode(ctx, inputs):
 def _list_target_views(ctx, inputs):
     has_view = ctx.view != ctx.dataset.view()
     has_selected = bool(ctx.selected)
-    default_target = None
+    default_target = "DATASET"
     if has_view or has_selected:
         target_choices = types.RadioGroup()
         target_choices.add_choice(
@@ -111,6 +111,8 @@ def _list_target_views(ctx, inputs):
             default=default_target,
             view=target_choices,
         )
+    else:
+        ctx.params["target"] = "DATASET"
 
 
 def _get_target_view(ctx, target):
@@ -253,9 +255,7 @@ class ZeroShotTasks(foo.Operator):
         return types.Property(inputs)
 
     def execute(self, ctx):
-        # dataset = ctx.dataset
         view = _get_target_view(ctx, ctx.params["target"])
-
         task = ctx.params.get("task_choices", "classification")
         model_name = ctx.params.get("model_choice", "CLIP")
         categories = _get_labels(ctx)
