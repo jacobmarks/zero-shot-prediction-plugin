@@ -341,7 +341,6 @@ def _input_control_flow(ctx, task):
 
 
 def _execute_control_flow(ctx, task):
-    # dataset = ctx.dataset
     view = _get_target_view(ctx, ctx.params["target"])
     model_name = ctx.params.get("model_choice", "CLIP")
     categories = _get_labels(ctx)
