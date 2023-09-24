@@ -329,9 +329,9 @@ def _input_control_flow(ctx, task):
         "model_choice", model_dropdown.choices[0].value
     )
     inputs.str(
-        "label_field",
+        f"label_field_{model_name}",
         label="Label Field",
-        default=model_name.lower().replace(" ", "_"),
+        default=_model_name_to_field_name(model_name),
         description="The field to store the predicted labels in",
         required=True,
     )
