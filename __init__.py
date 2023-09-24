@@ -232,7 +232,7 @@ class ZeroShotTasks(foo.Operator):
             view=label_input_choices,
         )
 
-        if ctx.params.get("label_input_choices", False) == "direct":
+        if ctx.params.get("label_input_choices", "direct") == "direct":
             inputs.str(
                 "labels",
                 label="Labels",
@@ -265,7 +265,8 @@ class ZeroShotTasks(foo.Operator):
     def execute(self, ctx):
         view = _get_target_view(ctx, ctx.params["target"])
         task = ctx.params.get("task_choices", "classification")
-        model_name = ctx.params.get(f"model_choice_{task}", "CLIP")
+        active_models = _get_active_models(task)
+        model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
         categories = _get_labels(ctx)
         label_field = ctx.params.get(
             f"label_field_{task}_{model_name}", model_name
@@ -344,7 +345,7 @@ def _execute_control_flow(ctx, task):
     view = _get_target_view(ctx, ctx.params["target"])
     model_name = ctx.params.get("model_choice", "CLIP")
     categories = _get_labels(ctx)
-    label_field = ctx.params.get("label_field", model_name)
+    label_field = ctx.params.get(f"label_field_{model_name}", model_name)
     run_zero_shot_task(view, task, model_name, label_field, categories)
     ctx.trigger("reload_dataset")
 
