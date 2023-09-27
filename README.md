@@ -1,5 +1,7 @@
 ## Zero Shot Prediction Plugin
 
+![zero_shot_owlvit_example](https://github.com/jacobmarks/zero-shot-prediction-plugin/assets/12500356/6aca099a-17b3-4f85-955d-26c3951f0646)
+
 This plugin allows you to perform zero-shot prediction on your dataset for the following tasks:
 
 - Image Classification
@@ -78,7 +80,7 @@ pip install transformers
 
 ## Usage
 
-All of the operators in this plugin are _delegated_ operators. This means that instead of waiting for the operator to finish, you _schedule_
+All of the operators in this plugin can be run in _delegated_ execution mode. This means that instead of waiting for the operator to finish, you _schedule_
 the operation to be performed separately. This is useful for long-running operations, such as performing inference on a large dataset.
 
 Once you have pressed the `Schedule` button for the operator, you will be able to see the job from the command line using FiftyOne's [command line interface](https://docs.voxel51.com/cli/index.html#fiftyone-delegated-operations):
