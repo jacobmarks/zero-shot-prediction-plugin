@@ -11,18 +11,24 @@ This plugin allows you to perform zero-shot prediction on your dataset for the f
 
 Given a list of label classes, which you can input either manually, separated by commas, or by uploading a text file, the plugin will perform zero-shot prediction on your dataset for the specified task and add the results to the dataset under a new field, which you can specify.
 
+### Updates
+
+- **2023-10-20**: Added support for AltCLIP and Align for image classification and GroupViT for semantic segmentation
+
 ## Models
 
 ### Built-in Models
 
 As a starting point, this plugin comes with at least one zero-shot model per task. These are:
 
-- Image Classification: [CLIP](https://github.com/openai/CLIP)
+- Image Classification: [CLIP](https://github.com/openai/CLIP), [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip), and [Align](https://huggingface.co/docs/transformers/model_doc/align)
 - Object Detection: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
 - Instance Segmentation: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
-- Semantic Segmentation: [CLIPSeg](https://huggingface.co/blog/clipseg-zero-shot)
+- Semantic Segmentation: [CLIPSeg](https://huggingface.co/blog/clipseg-zero-shot) and [GroupViT](https://huggingface.co/docs/transformers/model_doc/groupvit)
 
-The Owl-ViT and CLIPSeg models used are from the [HuggingFace Transformers](https://huggingface.co/transformers/) library, and the CLIP and SAM models are from the [FiftyOne Model Zoo](https://docs.voxel51.com/user_guide/model_zoo/index.html).
+Most of the models used are from the [HuggingFace Transformers](https://huggingface.co/transformers/) library, and CLIP and SAM models are from the [FiftyOne Model Zoo](https://docs.voxel51.com/user_guide/model_zoo/index.html)
+
+_Note_— For SAM you will need to have Facebook's `segment-anything` library installed.
 
 ### Adding Your Own Models
 
@@ -41,7 +47,17 @@ CLASSIFICATION_MODELS = {
         "activator": CLIP_activator,
         "model": CLIPZeroShotModel,
         "name": "CLIP",
-    }
+    },
+    "AltCLIP": {
+        "activator": AltCLIP_activator,
+        "model": AltCLIPZeroShotModel,
+        "name": "AltCLIP",
+    },
+    "Align": {
+        "activator": Align_activator,
+        "model": AlignZeroShotModel,
+        "name": "Align",
+    },
 }
 ```
 
@@ -56,6 +72,7 @@ CLASSIFICATION_MODELS = {
         "model": CLIPZeroShotModel,
         "name": "CLIP",
     },
+    ..., # other models
     "My Model": {
         "activator": my_model_activator,
         "model": my_model,
@@ -72,10 +89,16 @@ CLASSIFICATION_MODELS = {
 fiftyone plugins download https://github.com/jacobmarks/zero-shot-prediction-plugin
 ```
 
-If you want to use Owl-ViT or CLIPSeg, you will also need to install the `transformers` library:
+If you want to use AltCLIP, Align, Owl-ViT, CLIPSeg, or GroupViT, you will also need to install the `transformers` library:
 
 ```shell
 pip install transformers
+```
+
+If you want to use SAM, you will also need to install the `segment-anything` library:
+
+```shell
+pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 
 ## Usage

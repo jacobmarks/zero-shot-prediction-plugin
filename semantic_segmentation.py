@@ -57,12 +57,61 @@ def CLIPSeg_activator():
     return find_spec("transformers") is not None
 
 
+class GroupViTZeroShotModel(Model):
+    def __init__(self, config):
+        cats = config.get("categories", None)
+        self.candidate_labels = [f"a photo of a {cat}" for cat in cats]
+
+        from transformers import AutoProcessor, GroupViTModel
+
+        self.processor = AutoProcessor.from_pretrained(
+            "nvidia/groupvit-gccyfcc"
+        )
+        self.model = GroupViTModel.from_pretrained("nvidia/groupvit-gccyfcc")
+
+    @property
+    def media_type(self):
+        return "image"
+
+    def _predict(self, image):
+        inputs = self.processor(
+            text=self.candidate_labels,
+            images=image,
+            padding="max_length",
+            return_tensors="pt",
+        )
+        with torch.no_grad():
+            outputs = self.model(**inputs, output_segmentation=True)
+        preds = outputs.segmentation_logits.squeeze()
+        # pylint: disable=no-member
+        mask = torch.argmax(preds, dim=0).numpy()
+        return fo.Segmentation(mask=mask)
+
+    def predict(self, args):
+        image = Image.fromarray(args)
+        image = image.resize((224, 224))
+        predictions = self._predict(image)
+        return predictions
+
+    def predict_all(self, samples, args):
+        pass
+
+
+def GroupViT_activator():
+    return find_spec("transformers") is not None
+
+
 SEMANTIC_SEGMENTATION_MODELS = {
     "CLIPSeg": {
         "activator": CLIPSeg_activator,
         "model": CLIPSegZeroShotModel,
         "name": "CLIPSeg",
-    }
+    },
+    "GroupViT": {
+        "activator": GroupViT_activator,
+        "model": GroupViTZeroShotModel,
+        "name": "GroupViT",
+    },
 }
 
 
