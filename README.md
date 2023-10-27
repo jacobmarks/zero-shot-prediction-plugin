@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2021-10-27**: Added support for MetaCLIP for image classification
 - **2023-10-20**: Added support for AltCLIP and Align for image classification and GroupViT for semantic segmentation
 
 ## Models
@@ -21,7 +22,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 As a starting point, this plugin comes with at least one zero-shot model per task. These are:
 
-- Image Classification: [CLIP](https://github.com/openai/CLIP), [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip), and [Align](https://huggingface.co/docs/transformers/model_doc/align)
+- Image Classification: [CLIP](https://github.com/openai/CLIP), [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip), [MetaCLIP](https://huggingface.co/facebook/metaclip-h14-fullcc2.5b), and [Align](https://huggingface.co/docs/transformers/model_doc/align)
 - Object Detection: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
 - Instance Segmentation: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
 - Semantic Segmentation: [CLIPSeg](https://huggingface.co/blog/clipseg-zero-shot) and [GroupViT](https://huggingface.co/docs/transformers/model_doc/groupvit)
@@ -52,6 +53,11 @@ CLASSIFICATION_MODELS = {
         "activator": AltCLIP_activator,
         "model": AltCLIPZeroShotModel,
         "name": "AltCLIP",
+    },
+    "MetaCLIP-H14": {
+        "activator": MetaCLIP_activator,
+        "model": MetaCLIPZeroShotModel,
+        "name": "MetaCLIP-H14",
     },
     "Align": {
         "activator": Align_activator,

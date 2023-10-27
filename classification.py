@@ -87,6 +87,47 @@ def AltCLIP_activator():
     return find_spec("transformers") is not None
 
 
+class MetaCLIPZeroShotModel(Model):
+    def __init__(self, config):
+        self.categories = config.get("categories", None)
+        self.candidate_labels = [
+            f"a photo of a {cat}" for cat in self.categories
+        ]
+
+        from transformers import pipeline
+
+        self.pipe = pipeline(
+            "zero-shot-image-classification",
+            model="facebook/metaclip-h14-fullcc2.5b",
+        )
+
+    @property
+    def media_type(self):
+        return "image"
+
+    def _predict(self, image):
+        res = self.pipe([image], candidate_labels=self.candidate_labels)
+        probs = np.array([r["score"] for r in res[0]])
+        labels = np.array([r["label"] for r in res[0]])
+        lc = labels[0][13:]
+        return fo.Classification(
+            label=lc,
+            confidence=np.amax(probs),
+        )
+
+    def predict(self, args):
+        image = Image.fromarray(args)
+        predictions = self._predict(image)
+        return predictions
+
+    def predict_all(self, samples, args):
+        pass
+
+
+def MetaCLIP_activator():
+    return find_spec("transformers") is not None
+
+
 class AlignZeroShotModel(Model):
     def __init__(self, config):
         self.categories = config.get("categories", None)
@@ -145,6 +186,11 @@ CLASSIFICATION_MODELS = {
         "activator": AltCLIP_activator,
         "model": AltCLIPZeroShotModel,
         "name": "AltCLIP",
+    },
+    "MetaCLIP-H14": {
+        "activator": MetaCLIP_activator,
+        "model": MetaCLIPZeroShotModel,
+        "name": "MetaCLIP-H14",
     },
     "Align": {
         "activator": Align_activator,
