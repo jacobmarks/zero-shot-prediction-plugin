@@ -89,6 +89,10 @@ CLASSIFICATION_MODELS = {
 
 💡 You need to implement the `activator` and `model` functions for your model. The `activator` should check the environment to see if the model is available, and the `model` should be a `fiftyone.core.models.Model` object that is instantiated with the model name and the task.
 
+## Watch On Youtube
+[![Video Thumbnail](https://img.youtube.com/vi/GlwyFHbTklw/0.jpg)](https://www.youtube.com/watch?v=GlwyFHbTklw&list=PLuREAXoPgT0RZrUaT0UpX_HzwKkoB-S9j&index=7)
+
+
 ## Installation
 
 ```shell
