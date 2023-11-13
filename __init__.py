@@ -465,6 +465,9 @@ class ZeroShotClassify(foo.Operator):
             delegate,
         )
 
+    def list_models(self):
+        return list(MODEL_LISTS["classification"].keys())
+
 
 class ZeroShotDetect(foo.Operator):
     @property
@@ -505,6 +508,9 @@ class ZeroShotDetect(foo.Operator):
             label_field,
             delegate,
         )
+
+    def list_models(self):
+        return list(MODEL_LISTS["detection"].keys())
 
 
 class ZeroShotInstanceSegment(foo.Operator):
@@ -547,6 +553,9 @@ class ZeroShotInstanceSegment(foo.Operator):
             delegate,
         )
 
+    def list_models(self):
+        return list(MODEL_LISTS["instance_segmentation"].keys())
+
 
 class ZeroShotSemanticSegment(foo.Operator):
     @property
@@ -587,6 +596,9 @@ class ZeroShotSemanticSegment(foo.Operator):
             label_field,
             delegate,
         )
+
+    def list_models(self):
+        return list(MODEL_LISTS["semantic_segmentation"].keys())
 
 
 def register(plugin):
