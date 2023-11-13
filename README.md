@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2021-11-13**: Version 1.1.0 supports [calling operators from the Python SDK](#python-sdk)!
 - **2023-10-27**: Added support for MetaCLIP for image classification
 - **2023-10-20**: Added support for AltCLIP and Align for image classification and GroupViT for semantic segmentation
 
@@ -90,8 +91,8 @@ CLASSIFICATION_MODELS = {
 💡 You need to implement the `activator` and `model` functions for your model. The `activator` should check the environment to see if the model is available, and the `model` should be a `fiftyone.core.models.Model` object that is instantiated with the model name and the task.
 
 ## Watch On Youtube
-[![Video Thumbnail](https://img.youtube.com/vi/GlwyFHbTklw/0.jpg)](https://www.youtube.com/watch?v=GlwyFHbTklw&list=PLuREAXoPgT0RZrUaT0UpX_HzwKkoB-S9j&index=7)
 
+[![Video Thumbnail](https://img.youtube.com/vi/GlwyFHbTklw/0.jpg)](https://www.youtube.com/watch?v=GlwyFHbTklw&list=PLuREAXoPgT0RZrUaT0UpX_HzwKkoB-S9j&index=7)
 
 ## Installation
 
@@ -159,3 +160,53 @@ fiftyone delegated cleanup -s COMPLETED
 ### `zero_shot_semantic_segment`
 
 - Perform zero-shot semantic segmentation on your dataset
+
+## Python SDK
+
+You can also use the compute operators from the Python SDK!
+
+```python
+import fiftyone as fo
+import fiftyone.operators as foo
+import fiftyone.zoo as foz
+
+dataset = fo.load_dataset("quickstart")
+
+## Access the operator via its URI (plugin name + operator name)
+zsc = foo.get_operator("@jacobmarks/zero_shot_prediction/zero_shot_classify")
+
+## Run zero-shot classification on all images in the dataset, specifying the labels with the `labels` argument
+zsc(dataset, labels=["cat", "dog", "bird"])
+
+## Run zero-shot classification on all images in the dataset, specifying the labels with a text file
+zsc(dataset, labels_file="/path/to/labels.txt")
+
+## Specify the model to use, and the field to add the results to
+zsc(dataset, labels=["cat", "dog", "bird"], model="CLIP", field="predictions")
+
+## Run zero-shot detection on a view
+zsd = foo.get_operator("@jacobmarks/zero_shot_prediction/zero_shot_detect")
+view = dataset.take(10)
+zsd(
+    view,
+    labels=["license plate"],
+    model="OwlViT",
+    field="owlvit_license_plate",
+)
+```
+
+All four of the task-specific zero-shot prediction operators also expose a `list_models()` method, which returns a list of the available models for that task.
+
+```python
+zsss = foo.get_operator(
+    "@jacobmarks/zero_shot_prediction/zero_shot_semantic_segment"
+)
+
+zsss.list_models()
+
+## ['CLIPSeg', 'GroupViT']
+```
+
+**Note**: The `zero_shot_predict` operator is not yet supported in the Python SDK.
+
+**Note**: You may have trouble running these within a Jupyter notebook. If so, try running them in a Python script.
