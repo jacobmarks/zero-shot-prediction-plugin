@@ -360,6 +360,21 @@ NAME_TO_TASK = {
 }
 
 
+def _format_model_name(model_name):
+    return (
+        model_name.lower().replace(" ", "").replace("_", "").replace("-", "")
+    )
+
+
+def _match_model_name(model_name, model_names):
+    for name in model_names:
+        if _format_model_name(name) == _format_model_name(model_name):
+            return name
+    raise ValueError(
+        f"Model name {model_name} not found. Use one of {model_names}"
+    )
+
+
 def _handle_calling(
     uri,
     sample_collection,
@@ -375,6 +390,10 @@ def _handle_calling(
 
     if model_name is None:
         model_name = list(MODEL_LISTS[task].keys())[0]
+    elif model_name not in MODEL_LISTS[task]:
+        model_name = _match_model_name(
+            model_name, list(MODEL_LISTS[task].keys())
+        )
 
     if labels is None and labels_file is None:
         raise ValueError("Must provide either labels or labels_file")
