@@ -345,9 +345,65 @@ def _execute_control_flow(ctx, task):
     view = _get_target_view(ctx, ctx.params["target"])
     model_name = ctx.params.get("model_choice", "CLIP")
     categories = _get_labels(ctx)
-    label_field = ctx.params.get(f"label_field_{model_name}", model_name)
+    label_field = ctx.params.get(
+        f"label_field_{model_name}", _model_name_to_field_name(model_name)
+    )
     run_zero_shot_task(view, task, model_name, label_field, categories)
     ctx.trigger("reload_dataset")
+
+
+NAME_TO_TASK = {
+    "zero_shot_classify": "classification",
+    "zero_shot_detect": "detection",
+    "zero_shot_instance_segment": "instance_segmentation",
+    "zero_shot_semantic_segment": "semantic_segmentation",
+}
+
+
+def _handle_calling(
+    uri,
+    sample_collection,
+    model_name,
+    labels,
+    labels_file,
+    label_field,
+    delegate,
+):
+    ctx = dict(view=sample_collection.view())
+
+    task = NAME_TO_TASK[uri.split("/")[-1]]
+
+    if model_name is None:
+        model_name = list(MODEL_LISTS[task].keys())[0]
+
+    if labels is None and labels_file is None:
+        raise ValueError("Must provide either labels or labels_file")
+
+    if labels is not None and labels_file is not None:
+        raise ValueError("Cannot provide both labels and labels_file")
+
+    if labels is not None and type(labels) == list:
+        labels = ", ".join(labels)
+    else:
+        with open(labels_file, "r") as f:
+            labels = [label.strip() for label in f.readlines()]
+        labels = ", ".join(labels)
+
+    if label_field is None:
+        label_field = _model_name_to_field_name(model_name)
+
+    label_field_name = f"label_field_{model_name}"
+
+    params = dict(
+        target="CURRENT_VIEW",
+        model_choice=model_name,
+        label_input_choices="direct",
+        delegate=delegate,
+        labels=labels,
+    )
+    params[label_field_name] = label_field
+
+    return foo.execute_operator(uri, ctx, params=params)
 
 
 class ZeroShotClassify(foo.Operator):
@@ -371,6 +427,25 @@ class ZeroShotClassify(foo.Operator):
     def execute(self, ctx):
         _execute_control_flow(ctx, "classification")
 
+    def __call__(
+        self,
+        sample_collection,
+        model_name=None,
+        labels=None,
+        labels_file=None,
+        label_field=None,
+        delegate=False,
+    ):
+        return _handle_calling(
+            self.uri,
+            sample_collection,
+            model_name,
+            labels,
+            labels_file,
+            label_field,
+            delegate,
+        )
+
 
 class ZeroShotDetect(foo.Operator):
     @property
@@ -392,6 +467,25 @@ class ZeroShotDetect(foo.Operator):
 
     def execute(self, ctx):
         _execute_control_flow(ctx, "detection")
+
+    def __call__(
+        self,
+        sample_collection,
+        model_name=None,
+        labels=None,
+        labels_file=None,
+        label_field=None,
+        delegate=False,
+    ):
+        return _handle_calling(
+            self.uri,
+            sample_collection,
+            model_name,
+            labels,
+            labels_file,
+            label_field,
+            delegate,
+        )
 
 
 class ZeroShotInstanceSegment(foo.Operator):
@@ -415,6 +509,25 @@ class ZeroShotInstanceSegment(foo.Operator):
     def execute(self, ctx):
         _execute_control_flow(ctx, "instance_segmentation")
 
+    def __call__(
+        self,
+        sample_collection,
+        model_name=None,
+        labels=None,
+        labels_file=None,
+        label_field=None,
+        delegate=False,
+    ):
+        return _handle_calling(
+            self.uri,
+            sample_collection,
+            model_name,
+            labels,
+            labels_file,
+            label_field,
+            delegate,
+        )
+
 
 class ZeroShotSemanticSegment(foo.Operator):
     @property
@@ -436,6 +549,25 @@ class ZeroShotSemanticSegment(foo.Operator):
 
     def execute(self, ctx):
         _execute_control_flow(ctx, "semantic_segmentation")
+
+    def __call__(
+        self,
+        sample_collection,
+        model_name=None,
+        labels=None,
+        labels_file=None,
+        label_field=None,
+        delegate=False,
+    ):
+        return _handle_calling(
+            self.uri,
+            sample_collection,
+            model_name,
+            labels,
+            labels_file,
+            label_field,
+            delegate,
+        )
 
 
 def register(plugin):
