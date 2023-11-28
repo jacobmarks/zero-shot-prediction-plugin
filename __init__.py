@@ -139,7 +139,11 @@ def _get_labels(ctx):
         return [label.strip() for label in labels.split(",")]
     else:
         labels_file = ctx.params.get("labels_file", None).strip()
-        decoded_bytes = base64.b64decode(labels_file.split(",")[1])
+        if "," in labels_file:
+            lf = labels_file.split(",")[1]
+        else:
+            lf = labels_file
+        decoded_bytes = base64.b64decode(lf)
         labels = decoded_bytes.decode("utf-8")
         return [label.strip() for label in labels.split("\n")]
 
