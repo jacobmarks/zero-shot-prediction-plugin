@@ -112,6 +112,7 @@ class MetaCLIPZeroShotModel(Model):
         lc = labels[0][13:]
         return fo.Classification(
             label=lc,
+            logits=probs,
             confidence=np.amax(probs),
         )
 
