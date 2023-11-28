@@ -177,6 +177,66 @@ def Align_activator():
     return find_spec("transformers") is not None
 
 
+class OpenCLIPZeroShotModel(Model):
+    def __init__(self, config):
+        self.categories = config.get("categories", None)
+        self.candidate_labels = [
+            f"a photo of a {cat}" for cat in self.categories
+        ]
+
+        import open_clip
+
+        model, _, preprocess = open_clip.create_model_and_transforms(
+            "hf-hub:laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
+        )
+
+        tokenizer = open_clip.get_tokenizer(
+            "hf-hub:laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
+        )
+
+        self.model = model
+        self._preprocess = preprocess
+        self.tokenizer = tokenizer
+
+    @property
+    def media_type(self):
+        return "image"
+
+    def _predict(self, image):
+        image = self._preprocess(image).unsqueeze(0)
+        text = self.tokenizer(self.candidate_labels)
+        with torch.no_grad():
+            image_features = self.model.encode_image(image)
+            text_features = self.model.encode_text(text)
+            image_features /= image_features.norm(dim=-1, keepdim=True)
+            text_features /= text_features.norm(dim=-1, keepdim=True)
+            text_probs = (
+                (100.0 * image_features @ text_features.T)
+                .softmax(dim=-1)[0]
+                .numpy()
+            )
+
+        lc = self.categories[np.argmax(text_probs)]
+
+        return fo.Classification(
+            label=lc,
+            logits=text_probs,
+            confidence=np.amax(text_probs),
+        )
+
+    def predict(self, args):
+        image = Image.fromarray(args)
+        predictions = self._predict(image)
+        return predictions
+
+    def predict_all(self, samples, args):
+        pass
+
+
+def OpenCLIP_activator():
+    return find_spec("open_clip") is not None
+
+
 CLASSIFICATION_MODELS = {
     "CLIP": {
         "activator": CLIP_activator,
@@ -197,6 +257,11 @@ CLASSIFICATION_MODELS = {
         "activator": Align_activator,
         "model": AlignZeroShotModel,
         "name": "Align",
+    },
+    "OpenCLIP-ViT-H-14-laion2B": {
+        "activator": OpenCLIP_activator,
+        "model": OpenCLIPZeroShotModel,
+        "name": "OpenCLIP-ViT-H-14-laion2B",
     },
 }
 
