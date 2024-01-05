@@ -45,6 +45,20 @@ MODEL_LISTS = {
 }
 
 
+def _format_submodel_name(submodel):
+    return f"{submodel[0]}|{submodel[1]}"
+
+
+def _format_submodel_label(submodel):
+    pretrain = submodel[0].split("/")[-1]
+    arch = submodel[1]
+
+    arch_string = f"Architecture: {arch}"
+    _pt = pretrain and pretrain != "openai"
+    pretrain_string = f" | Pretrained: {pretrain}" if _pt else ""
+    return f"{arch_string}{pretrain_string}"
+
+
 def _execution_mode(ctx, inputs):
     delegate = ctx.params.get("delegate", False)
 
@@ -156,14 +170,37 @@ TASK_TO_FUNCTION = {
 }
 
 
-def run_zero_shot_task(dataset, task, model_name, label_field, categories):
-    return TASK_TO_FUNCTION[task](dataset, model_name, label_field, categories)
+def run_zero_shot_task(
+    dataset,
+    task,
+    model_name,
+    label_field,
+    categories,
+    architecture,
+    pretrained,
+):
+    return TASK_TO_FUNCTION[task](
+        dataset,
+        model_name,
+        label_field,
+        categories,
+        architecture=architecture,
+        pretrained=pretrained,
+    )
 
 
 def _model_name_to_field_name(model_name):
-    return (
-        model_name.lower().replace(" ", "_").replace("_+", "").replace("-", "")
+    fn = (
+        model_name.lower()
+        .replace(" ", "_")
+        .replace("_+", "")
+        .replace("-", "")
+        .split("(")[0]
+        .strip()
     )
+    if fn[-1] == "_":
+        fn = fn[:-1]
+    return fn
 
 
 class ZeroShotTasks(foo.Operator):
@@ -213,9 +250,8 @@ class ZeroShotTasks(foo.Operator):
             )
             return types.Property(inputs)
 
-        model_dropdown = types.Dropdown(
-            label=f"{chosen_task.capitalize()} Model"
-        )
+        model_dropdown_label = f"{chosen_task.capitalize()} Model"
+        model_dropdown = types.Dropdown(label=model_dropdown_label)
         for model in active_models:
             model_dropdown.add_choice(model, label=model)
         inputs.enum(
@@ -224,6 +260,41 @@ class ZeroShotTasks(foo.Operator):
             default=model_dropdown.choices[0].value,
             view=model_dropdown,
         )
+
+        model_choice = ctx.params.get(
+            f"model_choice_{chosen_task}", model_dropdown.choices[0].value
+        )
+        mc = model_choice.split("(")[0].strip().lower()
+
+        submodels = MODEL_LISTS[chosen_task][model_choice].get(
+            "submodels", None
+        )
+        if submodels is not None:
+            if len(submodels) == 1:
+                ctx.params["pretrained"] = submodels[0][0]
+                ctx.params["architecture"] = submodels[0][1]
+            else:
+                submodel_dropdown = types.Dropdown(
+                    label=f"{chosen_task.capitalize()} Submodel"
+                )
+                for submodel in submodels:
+                    submodel_dropdown.add_choice(
+                        _format_submodel_name(submodel),
+                        label=_format_submodel_label(submodel),
+                    )
+                inputs.enum(
+                    f"submodel_choice_{chosen_task}_{mc}",
+                    submodel_dropdown.values(),
+                    default=submodel_dropdown.choices[0].value,
+                    view=submodel_dropdown,
+                )
+
+                submodel_choice = ctx.params.get(
+                    f"submodel_choice_{chosen_task}_{model_choice}",
+                    submodel_dropdown.choices[0].value,
+                )
+                ctx.params["pretrained"] = submodel_choice.split("|")[0]
+                ctx.params["architecture"] = submodel_choice.split("|")[1]
 
         label_input_choices = types.RadioGroup()
         label_input_choices.add_choice("direct", label="Input directly")
@@ -255,6 +326,7 @@ class ZeroShotTasks(foo.Operator):
         model_name = ctx.params.get(
             f"model_choice_{chosen_task}", active_models[0]
         )
+        model_name = model_name.split("(")[0].strip()
         inputs.str(
             f"label_field_{chosen_task}_{model_name}",
             label="Label Field",
@@ -271,11 +343,23 @@ class ZeroShotTasks(foo.Operator):
         task = ctx.params.get("task_choices", "classification")
         active_models = _get_active_models(task)
         model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
+        mn = model_name.split("(")[0].strip()
         categories = _get_labels(ctx)
-        label_field = ctx.params.get(
-            f"label_field_{task}_{model_name}", model_name
+        label_field = ctx.params.get(f"label_field_{task}_{mn}", mn)
+        architecture = ctx.params.get("architecture", None)
+        pretrained = ctx.params.get("pretrained", None)
+
+        with open("/tmp/params.txt", "w") as f:
+            f.write(str(ctx.params))
+        run_zero_shot_task(
+            view,
+            task,
+            model_name,
+            label_field,
+            categories,
+            architecture,
+            pretrained,
         )
-        run_zero_shot_task(view, task, model_name, label_field, categories)
         ctx.trigger("reload_dataset")
 
 
@@ -302,6 +386,39 @@ def _input_control_flow(ctx, task):
         default=model_dropdown.choices[0].value,
         view=model_dropdown,
     )
+
+    model_choice = ctx.params.get(
+        f"model_choice", model_dropdown.choices[0].value
+    )
+    mc = model_choice.split("(")[0].strip().lower()
+
+    submodels = MODEL_LISTS[task][model_choice].get("submodels", None)
+    if submodels is not None:
+        if len(submodels) == 1:
+            ctx.params["pretrained"] = submodels[0][0]
+            ctx.params["architecture"] = submodels[0][1]
+        else:
+            submodel_dropdown = types.Dropdown(
+                label=f"{task.capitalize()} Submodel"
+            )
+            for submodel in submodels:
+                submodel_dropdown.add_choice(
+                    _format_submodel_name(submodel),
+                    label=_format_submodel_label(submodel),
+                )
+            inputs.enum(
+                f"submodel_choice_{task}_{mc}",
+                submodel_dropdown.values(),
+                default=submodel_dropdown.choices[0].value,
+                view=submodel_dropdown,
+            )
+
+            submodel_choice = ctx.params.get(
+                f"submodel_choice_{task}_{model_choice}",
+                submodel_dropdown.choices[0].value,
+            )
+            ctx.params["pretrained"] = submodel_choice.split("|")[0]
+            ctx.params["architecture"] = submodel_choice.split("|")[1]
 
     label_input_choices = types.RadioGroup()
     label_input_choices.add_choice("direct", label="Input directly")
@@ -333,8 +450,9 @@ def _input_control_flow(ctx, task):
     model_name = ctx.params.get(
         "model_choice", model_dropdown.choices[0].value
     )
+    mn = model_name.split("(")[0].strip().lower()
     inputs.str(
-        f"label_field_{model_name}",
+        f"label_field_{mn}",
         label="Label Field",
         default=_model_name_to_field_name(model_name),
         description="The field to store the predicted labels in",
@@ -352,7 +470,17 @@ def _execute_control_flow(ctx, task):
     label_field = ctx.params.get(
         f"label_field_{model_name}", _model_name_to_field_name(model_name)
     )
-    run_zero_shot_task(view, task, model_name, label_field, categories)
+    architecture = ctx.params.get("architecture", None)
+    pretrained = ctx.params.get("pretrained", None)
+    run_zero_shot_task(
+        view,
+        task,
+        model_name,
+        label_field,
+        categories,
+        architecture,
+        pretrained,
+    )
     ctx.trigger("reload_dataset")
 
 

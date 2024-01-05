@@ -92,7 +92,9 @@ def _get_model(model_name, config):
     return DETECTION_MODELS[model_name]["model"](config)
 
 
-def run_zero_shot_detection(dataset, model_name, label_field, categories):
+def run_zero_shot_detection(
+    dataset, model_name, label_field, categories, **kwargs
+):
     config = {"categories": categories}
     model = _get_model(model_name, config)
     dataset.apply_model(model, label_field=label_field)

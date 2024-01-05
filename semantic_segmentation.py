@@ -120,7 +120,7 @@ def _get_model(model_name, config):
 
 
 def run_zero_shot_semantic_segmentation(
-    dataset, model_name, label_field, categories
+    dataset, model_name, label_field, categories, **kwargs
 ):
     if "other" not in categories:
         categories.append("other")

@@ -13,25 +13,60 @@ import fiftyone as fo
 from fiftyone.core.models import Model
 import fiftyone.zoo as foz
 
+### Make tuples in form ("pretrained", "clip_model")
 
-class CLIPZeroShotModel(Model):
-    def __init__(self, config):
-        cats = config.get("categories", None)
-        self.model = foz.load_zoo_model(
-            "clip-vit-base32-torch",
-            text_prompt="A photo of a",
-            classes=cats,
-        )
+OPENAI_ARCHS = ["ViT-B-32", "ViT-B-16", "ViT-L-14"]
+OPENAI_CLIP_MODELS = [("openai", model) for model in OPENAI_ARCHS]
 
-    @property
-    def media_type(self):
-        return "image"
+DFN_CLIP_MODELS = [("dfn2b", "ViT-B-16")]
 
-    def predict(self, args):
-        return self.model.predict(args)
+META_ARCHS = ("ViT-B-16-quickgelu", "ViT-B-32-quickgelu", "ViT-L-14-quickgelu")
+META_PRETRAINS = ("metaclip_400m", "metaclip_fullcc")
+META_CLIP_MODELS = [
+    (pretrain, arch) for pretrain in META_PRETRAINS for arch in META_ARCHS
+]
+META_CLIP_MODELS.append(("metaclip_fullcc", "ViT-H-14-quickgelu"))
 
-    def predict_all(self, samples, args):
-        return self.model.predict_all(samples, args)
+CLIPA_MODELS = [("", "hf-hub:UCSC-VLAA/ViT-L-14-CLIPA-datacomp1B")]
+
+SIGLIP_ARCHS = (
+    "ViT-B-16-SigLIP",
+    "ViT-B-16-SigLIP-256",
+    "ViT-B-16-SigLIP-384",
+    "ViT-L-16-SigLIP-256",
+    "ViT-L-16-SigLIP-384",
+    "ViT-SO400M-14-SigLIP",
+    "ViT-SO400M-14-SigLIP-384",
+)
+SIGLIP_MODELS = [("", arch) for arch in SIGLIP_ARCHS]
+
+EVA_CLIP_MODELS = [
+    ("merged2b_s8b_b131k", "EVA02-B-16"),
+    ("merged2b_s6b_b61k", "EVA02-L-14-336"),
+    ("merged2b_s4b_b131k", "EVA02-L-14"),
+]
+
+LAION_CLIP_MODELS = [
+    ("laion2b_s34b_b79k", "ViT-B-32"),
+    ("laion2b_s32b_b82k", "ViT-L-14"),
+    ("laion2b_s32b_b79k", "ViT-H-14"),
+]
+
+
+def CLIPZeroShotModel(config):
+    cats = config.get("categories", None)
+    clip_model = config.get("clip_model", "ViT-B-32")
+    pretrained = config.get("pretrained", "laion2b_s32b_b79k")
+
+    model = foz.load_zoo_model(
+        "clip-vit-base32-torch",
+        clip_model=clip_model,
+        pretrained=pretrained,
+        text_prompt="A photo of a",
+        classes=cats,
+    )
+
+    return model
 
 
 def CLIP_activator():
@@ -79,53 +114,11 @@ class AltCLIPZeroShotModel(Model):
         predictions = self._predict(image)
         return predictions
 
-    def predict_all(self, samples, args):
-        pass
+    def _predict_all(self, images):
+        return [self._predict(image) for image in images]
 
 
 def AltCLIP_activator():
-    return find_spec("transformers") is not None
-
-
-class MetaCLIPZeroShotModel(Model):
-    def __init__(self, config):
-        self.categories = config.get("categories", None)
-        self.candidate_labels = [
-            f"a photo of a {cat}" for cat in self.categories
-        ]
-
-        from transformers import pipeline
-
-        self.pipe = pipeline(
-            "zero-shot-image-classification",
-            model="facebook/metaclip-h14-fullcc2.5b",
-        )
-
-    @property
-    def media_type(self):
-        return "image"
-
-    def _predict(self, image):
-        res = self.pipe([image], candidate_labels=self.candidate_labels)
-        probs = np.array([r["score"] for r in res[0]])
-        labels = np.array([r["label"] for r in res[0]])
-        lc = labels[0][13:]
-        return fo.Classification(
-            label=lc,
-            logits=probs,
-            confidence=np.amax(probs),
-        )
-
-    def predict(self, args):
-        image = Image.fromarray(args)
-        predictions = self._predict(image)
-        return predictions
-
-    def predict_all(self, samples, args):
-        pass
-
-
-def MetaCLIP_activator():
     return find_spec("transformers") is not None
 
 
@@ -169,108 +162,111 @@ class AlignZeroShotModel(Model):
         predictions = self._predict(image)
         return predictions
 
-    def predict_all(self, samples, args):
-        pass
+    def _predict_all(self, images):
+        return [self._predict(image) for image in images]
 
 
 def Align_activator():
     return find_spec("transformers") is not None
 
 
-class OpenCLIPZeroShotModel(Model):
-    def __init__(self, config):
-        self.categories = config.get("categories", None)
-        self.candidate_labels = [
-            f"a photo of a {cat}" for cat in self.categories
-        ]
+def OpenCLIPZeroShotModel(config):
+    cats = config.get("categories", None)
+    clip_model = config.get("clip_model", "ViT-B-32")
+    pretrained = config.get("pretrained", "laion2b_s32b_b79k")
 
-        import open_clip
+    model = foz.load_zoo_model(
+        "open-clip-torch",
+        clip_model=clip_model,
+        pretrained=pretrained,
+        text_prompt="A photo of a",
+        classes=cats,
+    )
 
-        model, _, preprocess = open_clip.create_model_and_transforms(
-            "hf-hub:laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
-        )
-
-        tokenizer = open_clip.get_tokenizer(
-            "hf-hub:laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
-        )
-
-        self.model = model
-        self._preprocess = preprocess
-        self.tokenizer = tokenizer
-
-    @property
-    def media_type(self):
-        return "image"
-
-    def _predict(self, image):
-        image = self._preprocess(image).unsqueeze(0)
-        text = self.tokenizer(self.candidate_labels)
-        with torch.no_grad():
-            image_features = self.model.encode_image(image)
-            text_features = self.model.encode_text(text)
-            image_features /= image_features.norm(dim=-1, keepdim=True)
-            text_features /= text_features.norm(dim=-1, keepdim=True)
-            text_probs = (
-                (100.0 * image_features @ text_features.T)
-                .softmax(dim=-1)[0]
-                .numpy()
-            )
-
-        lc = self.categories[np.argmax(text_probs)]
-
-        return fo.Classification(
-            label=lc,
-            logits=text_probs,
-            confidence=np.amax(text_probs),
-        )
-
-    def predict(self, args):
-        image = Image.fromarray(args)
-        predictions = self._predict(image)
-        return predictions
-
-    def predict_all(self, samples, args):
-        pass
+    return model
 
 
 def OpenCLIP_activator():
     return find_spec("open_clip") is not None
 
 
-CLASSIFICATION_MODELS = {
-    "CLIP": {
-        "activator": CLIP_activator,
-        "model": CLIPZeroShotModel,
-        "name": "CLIP",
-    },
-    "AltCLIP": {
-        "activator": AltCLIP_activator,
-        "model": AltCLIPZeroShotModel,
-        "name": "AltCLIP",
-    },
-    "MetaCLIP-H14": {
-        "activator": MetaCLIP_activator,
-        "model": MetaCLIPZeroShotModel,
-        "name": "MetaCLIP-H14",
-    },
-    "Align": {
-        "activator": Align_activator,
-        "model": AlignZeroShotModel,
-        "name": "Align",
-    },
-    "OpenCLIP-ViT-H-14-laion2B": {
-        "activator": OpenCLIP_activator,
-        "model": OpenCLIPZeroShotModel,
-        "name": "OpenCLIP-ViT-H-14-laion2B",
-    },
+CLASSIFICATION_MODEL_TYPES = {
+    "CLIP (OpenAI)": OPENAI_CLIP_MODELS,
+    "CLIPA": CLIPA_MODELS,
+    "DFN CLIP": DFN_CLIP_MODELS,
+    "EVA-CLIP": EVA_CLIP_MODELS,
+    "LAION CLIP (OpenCLIP)": LAION_CLIP_MODELS,
+    "MetaCLIP": META_CLIP_MODELS,
+    "SigLIP": SIGLIP_MODELS,
 }
+
+
+def build_classification_models_dict():
+    cms = {}
+
+    if Align_activator():
+        cms["ALIGN"] = {
+            "activator": Align_activator,
+            "model": AlignZeroShotModel,
+            "submodels": None,
+            "name": "ALIGN",
+        }
+
+    if AltCLIP_activator():
+        cms["AltCLIP"] = {
+            "activator": AltCLIP_activator,
+            "model": AltCLIPZeroShotModel,
+            "submodels": None,
+            "name": "AltCLIP",
+        }
+
+    if not OpenCLIP_activator():
+        cms["CLIP (OpenAI)"] = {
+            "activator": CLIP_activator,
+            "model": CLIPZeroShotModel,
+            "submodels": None,
+            "name": "CLIP (OpenAI)",
+        }
+        return cms
+
+    for key, value in CLASSIFICATION_MODEL_TYPES.items():
+        cms[key] = {
+            "activator": OpenCLIP_activator,
+            "model": OpenCLIPZeroShotModel,
+            "submodels": value,
+            "name": key,
+        }
+
+    return cms
+
+
+CLASSIFICATION_MODELS = build_classification_models_dict()
 
 
 def _get_model(model_name, config):
     return CLASSIFICATION_MODELS[model_name]["model"](config)
 
 
-def run_zero_shot_classification(dataset, model_name, label_field, categories):
-    config = {"categories": categories}
+def run_zero_shot_classification(
+    dataset,
+    model_name,
+    label_field,
+    categories,
+    architecture=None,
+    pretrained=None,
+):
+    with open("/tmp/test.txt", "w") as f:
+        f.write(str("hi"))
+    config = {
+        "categories": categories,
+        "clip_model": architecture,
+        "pretrained": pretrained,
+    }
+
+    with open("/tmp/config.txt", "w") as f:
+        f.write(str(config))
     model = _get_model(model_name, config)
+
+    with open("/tmp/model.txt", "w") as f:
+        f.write(str(model))
     dataset.apply_model(model, label_field=label_field)

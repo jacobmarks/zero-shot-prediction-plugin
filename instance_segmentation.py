@@ -75,7 +75,7 @@ def run_two_step_instance_segmentation(
 
 
 def run_zero_shot_instance_segmentation(
-    dataset, model_name, label_field, categories
+    dataset, model_name, label_field, categories, **kwargs
 ):
     if "SAM ViT" in model_name:
         run_two_step_instance_segmentation(
