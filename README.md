@@ -42,48 +42,38 @@ You can see the implementations for all of these models in the following files:
 - `instance_segmentation.py`
 - `semantic_segmentation.py`
 
-These models are "registered" via dictionaries in each file. In `classification.py`, for example, the dictionary is:
+These models are "registered" via dictionaries in each file. In `semantic_segmentation.py`, for example, the dictionary is:
 
 ```py
-CLASSIFICATION_MODELS = {
-    "CLIP": {
-        "activator": CLIP_activator,
-        "model": CLIPZeroShotModel,
-        "name": "CLIP",
+SEMANTIC_SEGMENTATION_MODELS = {
+    "CLIPSeg": {
+        "activator": CLIPSeg_activator,
+        "model": CLIPSegZeroShotModel,
+        "name": "CLIPSeg",
     },
-    "AltCLIP": {
-        "activator": AltCLIP_activator,
-        "model": AltCLIPZeroShotModel,
-        "name": "AltCLIP",
-    },
-    "MetaCLIP-H14": {
-        "activator": MetaCLIP_activator,
-        "model": MetaCLIPZeroShotModel,
-        "name": "MetaCLIP-H14",
-    },
-    "Align": {
-        "activator": Align_activator,
-        "model": AlignZeroShotModel,
-        "name": "Align",
-    },
-    "OpenCLIP-ViT-H-14-laion2B": {
-        "activator": OpenCLIP_activator,
-        "model": OpenCLIPZeroShotModel,
-        "name": "OpenCLIP-ViT-H-14-laion2B",
+    "GroupViT": {
+        "activator": GroupViT_activator,
+        "model": GroupViTZeroShotModel,
+        "name": "GroupViT",
     },
 }
 ```
 
-The `activator` checks the environment to see if the model is available, and the `model` is a `fiftyone.core.models.Model` object that is instantiated with the model name and the task. The `name` is the name of the model that will be displayed in the dropdown menu in the plugin.
+The `activator` checks the environment to see if the model is available, and the `model` is a `fiftyone.core.models.Model` object that is instantiated with the model name and the task — or a function that instantiates such a model. The `name` is the name of the model that will be displayed in the dropdown menu in the plugin.
 
-If you want to add your own model, you can add it to the dictionary in the corresponding file. For example, if you want to add a new image classification model, you can add it to the `CLASSIFICATION_MODELS` dictionary in `classification.py`:
+If you want to add your own model, you can add it to the dictionary in the corresponding file. For example, if you want to add a new semantic segmentation model, you can add it to the `SEMANTIC_SEGMENTATION_MODELS` dictionary in `semantic_segmentation.py`:
 
 ```py
 CLASSIFICATION_MODELS = {
-    "CLIP": {
-        "activator": CLIP_activator,
-        "model": CLIPZeroShotModel,
-        "name": "CLIP",
+    "CLIPSeg": {
+        "activator": CLIPSeg_activator,
+        "model": CLIPSegZeroShotModel,
+        "name": "CLIPSeg",
+    },
+    "GroupViT": {
+        "activator": GroupViT_activator,
+        "model": GroupViTZeroShotModel,
+        "name": "GroupViT",
     },
     ..., # other models
     "My Model": {
@@ -118,10 +108,16 @@ If you want to use SAM, you will also need to install the `segment-anything` lib
 pip install git+https://github.com/facebookresearch/segment-anything.git
 ```
 
-If you want to use OpenCLIP, you will also need to install the `open_clip` library:
+If you want to use OpenCLIP, you will also need to install the `open_clip` library from PyPI:
 
 ```shell
-pip install open_clip_torch
+pip install open-clip-torch
+```
+
+Or from source:
+
+```shell
+pip install git+https://github.com/mlfoundations/open_clip.git
 ```
 
 ## Usage
