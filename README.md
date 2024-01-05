@@ -13,8 +13,9 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
-- **2021-11-28**: Version 1.1.1 supports OpenCLIP for image classification!
-- **2021-11-13**: Version 1.1.0 supports [calling operators from the Python SDK](#python-sdk)!
+- **2024-01-05**: Added support for EVA-CLIP, SigLIP, and DFN CLIP for image classification!
+- **2023-11-28**: Version 1.1.1 supports OpenCLIP for image classification!
+- **2023-11-13**: Version 1.1.0 supports [calling operators from the Python SDK](#python-sdk)!
 - **2023-10-27**: Added support for MetaCLIP for image classification
 - **2023-10-20**: Added support for AltCLIP and Align for image classification and GroupViT for semantic segmentation
 
@@ -24,10 +25,30 @@ Given a list of label classes, which you can input either manually, separated by
 
 As a starting point, this plugin comes with at least one zero-shot model per task. These are:
 
-- Image Classification: [CLIP](https://github.com/openai/CLIP), [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip), [MetaCLIP](https://huggingface.co/facebook/metaclip-h14-fullcc2.5b), [OpenCLIP](https://github.com/mlfoundations/open_clip), and [Align](https://huggingface.co/docs/transformers/model_doc/align)
-- Object Detection: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
-- Instance Segmentation: [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
-- Semantic Segmentation: [CLIPSeg](https://huggingface.co/blog/clipseg-zero-shot) and [GroupViT](https://huggingface.co/docs/transformers/model_doc/groupvit)
+#### Image Classification
+
+- [ALIGN](https://huggingface.co/docs/transformers/model_doc/align)
+- [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip)
+- [CLIP](https://github.com/openai/CLIP): (OpenAI)
+- [CLIPA](https://github.com/UCSC-VLAA/CLIPA)
+- [DFN CLIP](https://huggingface.co/apple/DFN5B-CLIP-ViT-H-14-378): Data Filtering Networks
+- [EVA-CLIP](https://huggingface.co/QuanSun/EVA-CLIP)
+- [LAION CLIP](https://github.com/mlfoundations/open_clip): (OpenCLIP)
+- [MetaCLIP](https://github.com/facebookresearch/metaclip)
+- [SigLIP](https://huggingface.co/timm/ViT-SO400M-14-SigLIP-384)
+
+#### Object Detection
+
+- [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
+
+#### Instance Segmentation
+
+- [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
+
+#### Semantic Segmentation
+
+- [CLIPSeg](https://huggingface.co/blog/clipseg-zero-shot)
+- [GroupViT](https://huggingface.co/docs/transformers/model_doc/groupvit)
 
 Most of the models used are from the [HuggingFace Transformers](https://huggingface.co/transformers/) library, and CLIP and SAM models are from the [FiftyOne Model Zoo](https://docs.voxel51.com/user_guide/model_zoo/index.html)
 
