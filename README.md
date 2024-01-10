@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2024-01-10**: Removing LAION CLIP models.
 - **2024-01-05**: Added support for EVA-CLIP, SigLIP, and DFN CLIP for image classification!
 - **2023-11-28**: Version 1.1.1 supports OpenCLIP for image classification!
 - **2023-11-13**: Version 1.1.0 supports [calling operators from the Python SDK](#python-sdk)!
@@ -33,7 +34,6 @@ As a starting point, this plugin comes with at least one zero-shot model per tas
 - [CLIPA](https://github.com/UCSC-VLAA/CLIPA)
 - [DFN CLIP](https://huggingface.co/apple/DFN5B-CLIP-ViT-H-14-378): Data Filtering Networks
 - [EVA-CLIP](https://huggingface.co/QuanSun/EVA-CLIP)
-- [LAION CLIP](https://github.com/mlfoundations/open_clip): (OpenCLIP)
 - [MetaCLIP](https://github.com/facebookresearch/metaclip)
 - [SigLIP](https://huggingface.co/timm/ViT-SO400M-14-SigLIP-384)
 

@@ -46,17 +46,11 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
-LAION_CLIP_MODELS = [
-    ("laion2b_s34b_b79k", "ViT-B-32"),
-    ("laion2b_s32b_b82k", "ViT-L-14"),
-    ("laion2b_s32b_b79k", "ViT-H-14"),
-]
-
 
 def CLIPZeroShotModel(config):
     cats = config.get("categories", None)
     clip_model = config.get("clip_model", "ViT-B-32")
-    pretrained = config.get("pretrained", "laion2b_s32b_b79k")
+    pretrained = config.get("pretrained", "openai")
 
     model = foz.load_zoo_model(
         "clip-vit-base32-torch",
@@ -173,7 +167,7 @@ def Align_activator():
 def OpenCLIPZeroShotModel(config):
     cats = config.get("categories", None)
     clip_model = config.get("clip_model", "ViT-B-32")
-    pretrained = config.get("pretrained", "laion2b_s32b_b79k")
+    pretrained = config.get("pretrained", "openai")
 
     model = foz.load_zoo_model(
         "open-clip-torch",
@@ -195,7 +189,6 @@ CLASSIFICATION_MODEL_TYPES = {
     "CLIPA": CLIPA_MODELS,
     "DFN CLIP": DFN_CLIP_MODELS,
     "EVA-CLIP": EVA_CLIP_MODELS,
-    "LAION CLIP (OpenCLIP)": LAION_CLIP_MODELS,
     "MetaCLIP": META_CLIP_MODELS,
     "SigLIP": SIGLIP_MODELS,
 }
