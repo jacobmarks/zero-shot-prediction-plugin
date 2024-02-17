@@ -91,54 +91,6 @@ def _execution_mode(ctx, inputs):
         )
 
 
-def _list_target_views(ctx, inputs):
-    has_view = ctx.view != ctx.dataset.view()
-    has_selected = bool(ctx.selected)
-    default_target = "DATASET"
-    if has_view or has_selected:
-        target_choices = types.RadioGroup()
-        target_choices.add_choice(
-            "DATASET",
-            label="Entire dataset",
-            description="Run model on the entire dataset",
-        )
-
-        if has_view:
-            target_choices.add_choice(
-                "CURRENT_VIEW",
-                label="Current view",
-                description="Run model on the current view",
-            )
-            default_target = "CURRENT_VIEW"
-
-        if has_selected:
-            target_choices.add_choice(
-                "SELECTED_SAMPLES",
-                label="Selected samples",
-                description="Run model on the selected samples",
-            )
-            default_target = "SELECTED_SAMPLES"
-
-        inputs.enum(
-            "target",
-            target_choices.values(),
-            default=default_target,
-            view=target_choices,
-        )
-    else:
-        ctx.params["target"] = "DATASET"
-
-
-def _get_target_view(ctx, target):
-    if target == "SELECTED_SAMPLES":
-        return ctx.view.select(ctx.selected)
-
-    if target == "DATASET":
-        return ctx.dataset
-
-    return ctx.view
-
-
 def _get_active_models(task):
     ams = []
     for element in MODEL_LISTS[task].values():
@@ -232,7 +184,7 @@ class ZeroShotTasks(foo.Operator):
         inputs.enum(
             "task_choices",
             radio_choices.values(),
-            default=radio_choices.choices[0].value,
+            # default=radio_choices.choices[0].value,
             label="Zero Shot Task",
             view=radio_choices,
         )
@@ -335,11 +287,11 @@ class ZeroShotTasks(foo.Operator):
             required=True,
         )
         _execution_mode(ctx, inputs)
-        _list_target_views(ctx, inputs)
+        inputs.view_target(ctx)
         return types.Property(inputs)
 
     def execute(self, ctx):
-        view = _get_target_view(ctx, ctx.params["target"])
+        view = ctx.target_view()
         task = ctx.params.get("task_choices", "classification")
         active_models = _get_active_models(task)
         model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
@@ -349,8 +301,6 @@ class ZeroShotTasks(foo.Operator):
         architecture = ctx.params.get("architecture", None)
         pretrained = ctx.params.get("pretrained", None)
 
-        with open("/tmp/params.txt", "w") as f:
-            f.write(str(ctx.params))
         run_zero_shot_task(
             view,
             task,
@@ -459,12 +409,12 @@ def _input_control_flow(ctx, task):
         required=True,
     )
     _execution_mode(ctx, inputs)
-    _list_target_views(ctx, inputs)
+    inputs.view_target(ctx)
     return inputs
 
 
 def _execute_control_flow(ctx, task):
-    view = _get_target_view(ctx, ctx.params["target"])
+    view = ctx.target_view()
     model_name = ctx.params.get("model_choice", "CLIP")
     categories = _get_labels(ctx)
     label_field = ctx.params.get(
@@ -546,7 +496,7 @@ def _handle_calling(
     label_field_name = f"label_field_{model_name}"
 
     params = dict(
-        target="CURRENT_VIEW",
+        target=sample_collection,
         model_choice=model_name,
         label_input_choices="direct",
         delegate=delegate,

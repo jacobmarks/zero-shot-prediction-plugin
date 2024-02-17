@@ -248,18 +248,12 @@ def run_zero_shot_classification(
     architecture=None,
     pretrained=None,
 ):
-    with open("/tmp/test.txt", "w") as f:
-        f.write(str("hi"))
     config = {
         "categories": categories,
         "clip_model": architecture,
         "pretrained": pretrained,
     }
 
-    with open("/tmp/config.txt", "w") as f:
-        f.write(str(config))
     model = _get_model(model_name, config)
 
-    with open("/tmp/model.txt", "w") as f:
-        f.write(str(model))
     dataset.apply_model(model, label_field=label_field)
