@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2024-03-05**: Added support for YOLO-World for object detection!
 - **2024-01-10**: Removing LAION CLIP models.
 - **2024-01-05**: Added support for EVA-CLIP, SigLIP, and DFN CLIP for image classification!
 - **2023-11-28**: Version 1.1.1 supports OpenCLIP for image classification!
@@ -39,6 +40,7 @@ As a starting point, this plugin comes with at least one zero-shot model per tas
 
 #### Object Detection
 
+- [YOLO-World](https://docs.ultralytics.com/models/yolo-world/)
 - [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
 
 #### Instance Segmentation
@@ -139,6 +141,12 @@ Or from source:
 
 ```shell
 pip install git+https://github.com/mlfoundations/open_clip.git
+```
+
+If you want to use YOLO-World, you will also need to install the `ultralytics` library:
+
+```shell
+pip install -U ultralytics
 ```
 
 ## Usage

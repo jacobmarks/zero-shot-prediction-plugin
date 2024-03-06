@@ -11,6 +11,17 @@ from PIL import Image
 import fiftyone as fo
 from fiftyone.core.models import Model
 
+YOLO_WORLD_PRETRAINS = (
+    "yolov8s-world.pt",
+    "yolov8s-worldv2.pt",
+    "yolov8m-world.pt",
+    "yolov8m-worldv2.pt",
+    "yolov8l-world.pt",
+    "yolov8l-worldv2.pt",
+    "yolov8x-world.pt",
+    "yolov8x-worldv2.pt",
+)
+
 
 class OwlViTZeroShotModel(Model):
     def __init__(self, config):
@@ -79,13 +90,46 @@ def OwlViT_activator():
     return find_spec("transformers") is not None
 
 
-DETECTION_MODELS = {
-    "OwlViT": {
-        "activator": OwlViT_activator,
-        "model": OwlViTZeroShotModel,
-        "name": "OwlViT",
-    }
-}
+def YOLOWorldModel(config):
+    classes = config.get("categories", None)
+    pretrained = config.get("pretrained", "yolov8l-worldv2")
+    from ultralytics import YOLO
+
+    model = YOLO(pretrained)
+    model.set_classes(classes)
+    import fiftyone.utils.ultralytics as fouu
+
+    model = fouu.convert_ultralytics_model(model)
+    return model
+
+
+def YOLOWorld_activator():
+    return find_spec("ultralytics") is not None
+
+
+def build_detection_models_dict():
+    dms = {}
+
+    if OwlViT_activator():
+        dms["OwlViT"] = {
+            "activator": OwlViT_activator,
+            "model": OwlViTZeroShotModel,
+            "submodels": None,
+            "name": "OwlViT",
+        }
+
+    if YOLOWorld_activator():
+        dms["YOLO-World"] = {
+            "activator": YOLOWorld_activator,
+            "model": YOLOWorldModel,
+            "submodels": YOLO_WORLD_PRETRAINS,
+            "name": "YOLO-World",
+        }
+
+    return dms
+
+
+DETECTION_MODELS = build_detection_models_dict()
 
 
 def _get_model(model_name, config):
@@ -93,8 +137,8 @@ def _get_model(model_name, config):
 
 
 def run_zero_shot_detection(
-    dataset, model_name, label_field, categories, **kwargs
+    dataset, model_name, label_field, categories, pretrained=None, **kwargs
 ):
-    config = {"categories": categories}
+    config = {"categories": categories, "pretrained": pretrained}
     model = _get_model(model_name, config)
     dataset.apply_model(model, label_field=label_field)

@@ -46,10 +46,14 @@ MODEL_LISTS = {
 
 
 def _format_submodel_name(submodel):
+    if type(submodel) == str:
+        return submodel
     return f"{submodel[0]}|{submodel[1]}"
 
 
 def _format_submodel_label(submodel):
+    if type(submodel) == str:
+        return submodel.split(".")[0]
     pretrain = submodel[0].split("/")[-1]
     arch = submodel[1]
 
@@ -245,8 +249,12 @@ class ZeroShotTasks(foo.Operator):
                     f"submodel_choice_{chosen_task}_{model_choice}",
                     submodel_dropdown.choices[0].value,
                 )
-                ctx.params["pretrained"] = submodel_choice.split("|")[0]
-                ctx.params["architecture"] = submodel_choice.split("|")[1]
+                if "|" in submodel_choice:
+                    ctx.params["pretrained"] = submodel_choice.split("|")[0]
+                    ctx.params["architecture"] = submodel_choice.split("|")[1]
+                else:
+                    ctx.params["pretrained"] = submodel_choice
+                    ctx.params["architecture"] = None
 
         label_input_choices = types.RadioGroup()
         label_input_choices.add_choice("direct", label="Input directly")
