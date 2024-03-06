@@ -7,11 +7,8 @@
 
 from importlib.util import find_spec
 import os
-import sys
 
 
-import fiftyone as fo
-from fiftyone.core.models import Model
 from fiftyone.core.utils import add_sys_path
 import fiftyone.zoo as foz
 
