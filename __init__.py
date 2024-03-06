@@ -159,6 +159,95 @@ def _model_name_to_field_name(model_name):
     return fn
 
 
+def _handle_model_choice_inputs(ctx, inputs, chosen_task):
+    active_models = _get_active_models(chosen_task)
+
+    if len(active_models) == 0:
+        inputs.str(
+            "no_models_warning",
+            view=types.Warning(
+                label=f"No Models Found",
+                description="No models were found for the selected task. Please install the required libraries.",
+            ),
+        )
+        return types.Property(inputs)
+
+    ct_label = (
+        "Segmentation"
+        if "segment" in chosen_task
+        else chosen_task.capitalize()
+    )
+    model_dropdown_label = f"{ct_label} Model"
+    model_dropdown = types.Dropdown(label=model_dropdown_label)
+    for model in active_models:
+        model_dropdown.add_choice(model, label=model)
+    inputs.enum(
+        f"model_choice_{chosen_task}",
+        model_dropdown.values(),
+        default=model_dropdown.choices[0].value,
+        view=model_dropdown,
+    )
+
+    model_choice = ctx.params.get(
+        f"model_choice_{chosen_task}", model_dropdown.choices[0].value
+    )
+    mc = model_choice.split("(")[0].strip().lower()
+
+    submodels = MODEL_LISTS[chosen_task][model_choice].get("submodels", None)
+    if submodels is not None:
+        if len(submodels) == 1:
+            ctx.params["pretrained"] = submodels[0][0]
+            ctx.params["architecture"] = submodels[0][1]
+        else:
+            submodel_dropdown = types.Dropdown(
+                label=f"{chosen_task.capitalize()} Submodel"
+            )
+            for submodel in submodels:
+                submodel_dropdown.add_choice(
+                    _format_submodel_name(submodel),
+                    label=_format_submodel_label(submodel),
+                )
+            inputs.enum(
+                f"submodel_choice_{chosen_task}_{mc}",
+                submodel_dropdown.values(),
+                default=submodel_dropdown.choices[0].value,
+                view=submodel_dropdown,
+            )
+
+            submodel_choice = ctx.params.get(
+                f"submodel_choice_{chosen_task}_{model_choice}",
+                submodel_dropdown.choices[0].value,
+            )
+
+            if "|" in submodel_choice:
+                if chosen_task == "instance_segmentation":
+                    ctx.params["pretrained"] += submodel_choice.split("|")[0]
+                    ctx.params["architecture"] += submodel_choice.split("|")[1]
+                else:
+                    ctx.params["pretrained"] = submodel_choice.split("|")[0]
+                    ctx.params["architecture"] = submodel_choice.split("|")[1]
+            else:
+                if chosen_task == "instance_segmentation":
+                    ctx.params["pretrained"] += submodel_choice
+                else:
+                    ctx.params["pretrained"] = submodel_choice
+                    ctx.params["architecture"] = None
+
+
+def handle_model_choice_inputs(ctx, inputs, chosen_task):
+    if chosen_task == "instance_segmentation":
+        _handle_model_choice_inputs(ctx, inputs, "detection")
+        if ctx.params.get("pretrained", None) is not None:
+            ctx.params["pretrained"] = ctx.params["pretrained"] + " + "
+        else:
+            ctx.params["pretrained"] = " + "
+        if ctx.params.get("architecture", None) is not None:
+            ctx.params["architecture"] = ctx.params["architecture"] + " + "
+        else:
+            ctx.params["architecture"] = " + "
+    _handle_model_choice_inputs(ctx, inputs, chosen_task)
+
+
 class ZeroShotTasks(foo.Operator):
     @property
     def config(self):
@@ -188,73 +277,14 @@ class ZeroShotTasks(foo.Operator):
         inputs.enum(
             "task_choices",
             radio_choices.values(),
-            # default=radio_choices.choices[0].value,
+            default=radio_choices.choices[0].value,
             label="Zero Shot Task",
             view=radio_choices,
         )
 
         chosen_task = ctx.params.get("task_choices", "classification")
+        handle_model_choice_inputs(ctx, inputs, chosen_task)
         active_models = _get_active_models(chosen_task)
-
-        if len(active_models) == 0:
-            inputs.str(
-                "no_models_warning",
-                view=types.Warning(
-                    label=f"No Models Found",
-                    description="No models were found for the selected task. Please install the required libraries.",
-                ),
-            )
-            return types.Property(inputs)
-
-        model_dropdown_label = f"{chosen_task.capitalize()} Model"
-        model_dropdown = types.Dropdown(label=model_dropdown_label)
-        for model in active_models:
-            model_dropdown.add_choice(model, label=model)
-        inputs.enum(
-            f"model_choice_{chosen_task}",
-            model_dropdown.values(),
-            default=model_dropdown.choices[0].value,
-            view=model_dropdown,
-        )
-
-        model_choice = ctx.params.get(
-            f"model_choice_{chosen_task}", model_dropdown.choices[0].value
-        )
-        mc = model_choice.split("(")[0].strip().lower()
-
-        submodels = MODEL_LISTS[chosen_task][model_choice].get(
-            "submodels", None
-        )
-        if submodels is not None:
-            if len(submodels) == 1:
-                ctx.params["pretrained"] = submodels[0][0]
-                ctx.params["architecture"] = submodels[0][1]
-            else:
-                submodel_dropdown = types.Dropdown(
-                    label=f"{chosen_task.capitalize()} Submodel"
-                )
-                for submodel in submodels:
-                    submodel_dropdown.add_choice(
-                        _format_submodel_name(submodel),
-                        label=_format_submodel_label(submodel),
-                    )
-                inputs.enum(
-                    f"submodel_choice_{chosen_task}_{mc}",
-                    submodel_dropdown.values(),
-                    default=submodel_dropdown.choices[0].value,
-                    view=submodel_dropdown,
-                )
-
-                submodel_choice = ctx.params.get(
-                    f"submodel_choice_{chosen_task}_{model_choice}",
-                    submodel_dropdown.choices[0].value,
-                )
-                if "|" in submodel_choice:
-                    ctx.params["pretrained"] = submodel_choice.split("|")[0]
-                    ctx.params["architecture"] = submodel_choice.split("|")[1]
-                else:
-                    ctx.params["pretrained"] = submodel_choice
-                    ctx.params["architecture"] = None
 
         label_input_choices = types.RadioGroup()
         label_input_choices.add_choice("direct", label="Input directly")
@@ -304,6 +334,10 @@ class ZeroShotTasks(foo.Operator):
         active_models = _get_active_models(task)
         model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
         mn = model_name.split("(")[0].strip()
+        if task == "instance_segmentation":
+            model_name = (
+                ctx.params[f"model_choice_detection"] + " + " + model_name
+            )
         categories = _get_labels(ctx)
         label_field = ctx.params.get(f"label_field_{task}_{mn}", mn)
         architecture = ctx.params.get("architecture", None)
@@ -335,48 +369,7 @@ def _input_control_flow(ctx, task):
         )
         return types.Property(inputs)
 
-    model_dropdown = types.Dropdown(label=f"{task.capitalize()} Model")
-    for model in active_models:
-        model_dropdown.add_choice(model, label=model)
-    inputs.enum(
-        "model_choice",
-        model_dropdown.values(),
-        default=model_dropdown.choices[0].value,
-        view=model_dropdown,
-    )
-
-    model_choice = ctx.params.get(
-        f"model_choice", model_dropdown.choices[0].value
-    )
-    mc = model_choice.split("(")[0].strip().lower()
-
-    submodels = MODEL_LISTS[task][model_choice].get("submodels", None)
-    if submodels is not None:
-        if len(submodels) == 1:
-            ctx.params["pretrained"] = submodels[0][0]
-            ctx.params["architecture"] = submodels[0][1]
-        else:
-            submodel_dropdown = types.Dropdown(
-                label=f"{task.capitalize()} Submodel"
-            )
-            for submodel in submodels:
-                submodel_dropdown.add_choice(
-                    _format_submodel_name(submodel),
-                    label=_format_submodel_label(submodel),
-                )
-            inputs.enum(
-                f"submodel_choice_{task}_{mc}",
-                submodel_dropdown.values(),
-                default=submodel_dropdown.choices[0].value,
-                view=submodel_dropdown,
-            )
-
-            submodel_choice = ctx.params.get(
-                f"submodel_choice_{task}_{model_choice}",
-                submodel_dropdown.choices[0].value,
-            )
-            ctx.params["pretrained"] = submodel_choice.split("|")[0]
-            ctx.params["architecture"] = submodel_choice.split("|")[1]
+    handle_model_choice_inputs(ctx, inputs, task)
 
     label_input_choices = types.RadioGroup()
     label_input_choices.add_choice("direct", label="Input directly")
@@ -405,9 +398,7 @@ def _input_control_flow(ctx, task):
             view=labels_file,
         )
 
-    model_name = ctx.params.get(
-        "model_choice", model_dropdown.choices[0].value
-    )
+    model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
     mn = model_name.split("(")[0].strip().lower()
     inputs.str(
         f"label_field_{mn}",
@@ -422,12 +413,16 @@ def _input_control_flow(ctx, task):
 
 
 def _execute_control_flow(ctx, task):
+    with open("/tmp/params.txt", "w") as f:
+        f.write(str(ctx.params))
     view = ctx.target_view()
-    model_name = ctx.params.get("model_choice", "CLIP")
+    model_name = ctx.params.get(f"model_choice_{task}", "CLIP")
+    mn = _model_name_to_field_name(model_name).split("(")[0].strip().lower()
+    label_field = ctx.params.get(f"label_field_{mn}", mn)
+    if task == "instance_segmentation":
+        model_name = ctx.params[f"model_choice_detection"] + " + " + model_name
     categories = _get_labels(ctx)
-    label_field = ctx.params.get(
-        f"label_field_{model_name}", _model_name_to_field_name(model_name)
-    )
+
     architecture = ctx.params.get("architecture", None)
     pretrained = ctx.params.get("pretrained", None)
     run_zero_shot_task(
