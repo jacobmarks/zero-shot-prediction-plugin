@@ -352,7 +352,7 @@ class ZeroShotTasks(foo.Operator):
             architecture,
             pretrained,
         )
-        ctx.trigger("reload_dataset")
+        ctx.ops.reload_dataset()
 
 
 ### Common input control flow for all tasks
@@ -434,7 +434,7 @@ def _execute_control_flow(ctx, task):
         architecture,
         pretrained,
     )
-    ctx.trigger("reload_dataset")
+    ctx.ops.reload_dataset()
 
 
 NAME_TO_TASK = {

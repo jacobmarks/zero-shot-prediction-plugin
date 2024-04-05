@@ -247,4 +247,6 @@ zsss.list_models()
 
 **Note**: The `zero_shot_predict` operator is not yet supported in the Python SDK.
 
-**Note**: You may have trouble running these within a Jupyter notebook. If so, try running them in a Python script.
+**Note**: With earlier versions of FiftyOne, you may have trouble running these
+operator executions within a Jupyter notebook. If so, try running them in a
+Python script, or upgrading to the latest version of FiftyOne!

@@ -1,7 +1,7 @@
 fiftyone:
-  version: ">=0.23.5"
+  version: ">=0.23.7"
 name: "@jacobmarks/zero_shot_prediction"
-version: "1.2.4"
+version: "1.2.5"
 description: "Run zero-shot (open vocabulary) prediction on your data!"
 url: "https://github.com/jacobmarks/zero-shot-predictions-plugin/"
 operators:
