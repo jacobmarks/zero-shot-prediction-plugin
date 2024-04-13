@@ -6,9 +6,12 @@
 """
 
 from importlib.util import find_spec
+import pkg_resources
+
 from PIL import Image
 
 import fiftyone as fo
+import fiftyone.zoo as foz
 from fiftyone.core.models import Model
 
 YOLO_WORLD_PRETRAINS = (
@@ -92,19 +95,26 @@ def OwlViT_activator():
 
 def YOLOWorldModel(config):
     classes = config.get("categories", None)
-    pretrained = config.get("pretrained", "yolov8l-worldv2")
-    from ultralytics import YOLO
+    pretrained = config.get("pretrained", "yolov8l-world")
+    if "v2" in pretrained:
+        from ultralytics import YOLO
 
-    model = YOLO(pretrained)
-    model.set_classes(classes)
-    import fiftyone.utils.ultralytics as fouu
+        model = YOLO(pretrained + ".pt")
+        model.set_classes(classes)
+        import fiftyone.utils.ultralytics as fouu
 
-    model = fouu.convert_ultralytics_model(model)
+        model = fouu.convert_ultralytics_model(model)
+    else:
+        model = foz.load_zoo_model(pretrained + "-torch", classes=classes)
     return model
 
 
 def YOLOWorld_activator():
-    return find_spec("ultralytics") is not None
+    if find_spec("ultralytics") is None:
+        return False
+    required_version = "8.1.42"
+    installed_version = pkg_resources.get_distribution("ultralytics").version
+    return installed_version >= required_version
 
 
 def build_detection_models_dict():

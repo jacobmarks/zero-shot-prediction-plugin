@@ -21,6 +21,10 @@ Given a list of label classes, which you can input either manually, separated by
 - **2023-10-27**: Added support for MetaCLIP for image classification
 - **2023-10-20**: Added support for AltCLIP and Align for image classification and GroupViT for semantic segmentation
 
+### Requirements
+
+- To use YOLO-World models, you must have `"ultalytics>=8.1.42"`.
+
 ## Models
 
 ### Built-in Models
