@@ -134,6 +134,7 @@ def run_zero_shot_task(
     categories,
     architecture,
     pretrained,
+    confidence=0.2,
 ):
     return TASK_TO_FUNCTION[task](
         dataset,
@@ -142,6 +143,7 @@ def run_zero_shot_task(
         categories,
         architecture=architecture,
         pretrained=pretrained,
+        confidence=confidence,
     )
 
 
@@ -286,6 +288,14 @@ class ZeroShotTasks(foo.Operator):
         handle_model_choice_inputs(ctx, inputs, chosen_task)
         active_models = _get_active_models(chosen_task)
 
+        if chosen_task in ["detection", "instance_segmentation"]:
+            inputs.float(
+                "confidence",
+                label="Confidence Threshold",
+                default=0.2,
+                description="The minimum confidence required for a prediction to be included",
+            )
+
         label_input_choices = types.RadioGroup()
         label_input_choices.add_choice("direct", label="Input directly")
         label_input_choices.add_choice("file", label="Input from file")
@@ -342,6 +352,7 @@ class ZeroShotTasks(foo.Operator):
         label_field = ctx.params.get(f"label_field_{task}_{mn}", mn)
         architecture = ctx.params.get("architecture", None)
         pretrained = ctx.params.get("pretrained", None)
+        confidence = ctx.params.get("confidence", 0.2)
 
         run_zero_shot_task(
             view,
@@ -351,6 +362,7 @@ class ZeroShotTasks(foo.Operator):
             categories,
             architecture,
             pretrained,
+            confidence=confidence,
         )
         ctx.ops.reload_dataset()
 
@@ -381,6 +393,14 @@ def _input_control_flow(ctx, task):
         label="Labels",
         view=label_input_choices,
     )
+
+    if task in ["detection", "instance_segmentation"]:
+        inputs.float(
+            "confidence",
+            label="Confidence Threshold",
+            default=0.2,
+            description="The minimum confidence required for a prediction to be included",
+        )
 
     if ctx.params.get("label_input_choices", False) == "direct":
         inputs.str(
@@ -421,10 +441,15 @@ def _execute_control_flow(ctx, task):
     label_field = ctx.params.get(f"label_field_{mn}", mn)
     if task == "instance_segmentation":
         model_name = ctx.params[f"model_choice_detection"] + " + " + model_name
+
+    kwargs = {}
+    if task in ["detection", "instance_segmentation"]:
+        kwargs["confidence"] = ctx.params.get("confidence", 0.2)
     categories = _get_labels(ctx)
 
     architecture = ctx.params.get("architecture", None)
     pretrained = ctx.params.get("pretrained", None)
+
     run_zero_shot_task(
         view,
         task,
@@ -433,6 +458,7 @@ def _execute_control_flow(ctx, task):
         categories,
         architecture,
         pretrained,
+        **kwargs,
     )
     ctx.ops.reload_dataset()
 
@@ -468,6 +494,7 @@ def _handle_calling(
     labels_file,
     label_field,
     delegate,
+    confidence=None,
 ):
     ctx = dict(view=sample_collection.view())
 
@@ -505,6 +532,8 @@ def _handle_calling(
         delegate=delegate,
         labels=labels,
     )
+    if confidence is not None:
+        params["confidence"] = confidence
     params[label_field_name] = label_field
 
     return foo.execute_operator(uri, ctx, params=params)
@@ -570,6 +599,12 @@ class ZeroShotDetect(foo.Operator):
 
     def resolve_input(self, ctx):
         inputs = _input_control_flow(ctx, "detection")
+        inputs.float(
+            "confidence",
+            label="Confidence Threshold",
+            default=0.2,
+            description="The minimum confidence required for a prediction to be included",
+        )
         return types.Property(inputs)
 
     def execute(self, ctx):
@@ -583,6 +618,7 @@ class ZeroShotDetect(foo.Operator):
         labels_file=None,
         label_field=None,
         delegate=False,
+        confidence=0.2,
     ):
         return _handle_calling(
             self.uri,
@@ -592,6 +628,7 @@ class ZeroShotDetect(foo.Operator):
             labels_file,
             label_field,
             delegate,
+            confidence=confidence,
         )
 
     def list_models(self):
@@ -627,6 +664,7 @@ class ZeroShotInstanceSegment(foo.Operator):
         labels_file=None,
         label_field=None,
         delegate=False,
+        confidence=0.2,
     ):
         return _handle_calling(
             self.uri,
@@ -636,6 +674,7 @@ class ZeroShotInstanceSegment(foo.Operator):
             labels_file,
             label_field,
             delegate,
+            confidence=0.2,
         )
 
     def list_models(self):

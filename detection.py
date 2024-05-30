@@ -15,14 +15,14 @@ import fiftyone.zoo as foz
 from fiftyone.core.models import Model
 
 YOLO_WORLD_PRETRAINS = (
-    "yolov8s-world.pt",
-    "yolov8s-worldv2.pt",
-    "yolov8m-world.pt",
-    "yolov8m-worldv2.pt",
-    "yolov8l-world.pt",
-    "yolov8l-worldv2.pt",
-    "yolov8x-world.pt",
-    "yolov8x-worldv2.pt",
+    "yolov8s-world",
+    "yolov8s-worldv2",
+    "yolov8m-world",
+    "yolov8m-worldv2",
+    "yolov8l-world",
+    "yolov8l-worldv2",
+    "yolov8x-world",
+    "yolov8x-worldv2",
 )
 
 
@@ -185,6 +185,9 @@ def _get_model(model_name, config):
 def run_zero_shot_detection(
     dataset, model_name, label_field, categories, pretrained=None, **kwargs
 ):
+    confidence = kwargs.get("confidence", 0.2)
     config = {"categories": categories, "pretrained": pretrained}
     model = _get_model(model_name, config)
-    dataset.apply_model(model, label_field=label_field)
+    dataset.apply_model(
+        model, label_field=label_field, confidence_thresh=confidence
+    )

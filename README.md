@@ -13,6 +13,9 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2024-05-30**: Added
+  - support for Grounding DINO for object detection and instance segmentation
+  - confidence thresholding for object detection and instance segmentation
 - **2024-03-06**: Added support for YOLO-World for object detection and instance segmentation!
 - **2024-01-10**: Removing LAION CLIP models.
 - **2024-01-05**: Added support for EVA-CLIP, SigLIP, and DFN CLIP for image classification!
@@ -46,11 +49,13 @@ As a starting point, this plugin comes with at least one zero-shot model per tas
 
 - [YOLO-World](https://docs.ultralytics.com/models/yolo-world/)
 - [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit)
+- [Grounding DINO](https://huggingface.co/docs/transformers/main/en/model_doc/grounding-dino)
 
 #### Instance Segmentation
 
 - [Owl-ViT](https://huggingface.co/docs/transformers/model_doc/owlvit) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
 - [YOLO-World](https://docs.ultralytics.com/models/yolo-world/) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
+- [Grounding DINO](https://huggingface.co/docs/transformers/main/en/model_doc/grounding-dino) + [Segment Anything (SAM)](https://github.com/facebookresearch/segment-anything)
 
 #### Semantic Segmentation
 

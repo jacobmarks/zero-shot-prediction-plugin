@@ -69,6 +69,7 @@ def run_zero_shot_instance_segmentation(
         label_field,
         categories,
         pretrained=det_pretrained,
+        **kwargs
     )
 
     seg_model = _get_segmentation_model(seg_architecture)
