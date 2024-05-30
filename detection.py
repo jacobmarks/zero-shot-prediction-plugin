@@ -93,6 +93,34 @@ def OwlViT_activator():
     return find_spec("transformers") is not None
 
 
+def GroundingDINO(config):
+    classes = config.get("categories", None)
+    model = foz.load_zoo_model(
+        "zero-shot-detection-transformer-torch",
+        name_or_path="IDEA-Research/grounding-dino-tiny",
+        classes=classes,
+    )
+    return model
+
+
+def GroundingDINO_activator():
+    if find_spec("transformers") is None:
+        return False
+    required_version = "4.40.0"
+    installed_version = pkg_resources.get_distribution("transformers").version
+    if installed_version < required_version:
+        return False
+
+    required_fiftyone_version = "0.24.0"
+    installed_fiftyone_version = pkg_resources.get_distribution(
+        "fiftyone"
+    ).version
+    if installed_fiftyone_version < required_fiftyone_version:
+        return False
+
+    return True
+
+
 def YOLOWorldModel(config):
     classes = config.get("categories", None)
     pretrained = config.get("pretrained", "yolov8l-world")
@@ -134,6 +162,14 @@ def build_detection_models_dict():
             "model": YOLOWorldModel,
             "submodels": YOLO_WORLD_PRETRAINS,
             "name": "YOLO-World",
+        }
+
+    if GroundingDINO_activator():
+        dms["GroundingDINO"] = {
+            "activator": GroundingDINO_activator,
+            "model": GroundingDINO,
+            "submodels": None,
+            "name": "GroundingDINO",
         }
 
     return dms
