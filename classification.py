@@ -247,6 +247,7 @@ def run_zero_shot_classification(
     categories,
     architecture=None,
     pretrained=None,
+    **kwargs,
 ):
     config = {
         "categories": categories,
