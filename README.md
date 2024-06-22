@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 
+- **2024-06-22**: Updated interface for Python operator execution
 - **2024-05-30**: Added
   - support for Grounding DINO for object detection and instance segmentation
   - confidence thresholding for object detection and instance segmentation
@@ -234,11 +235,11 @@ zsc(dataset, labels=["cat", "dog", "bird"], model="CLIP", field="predictions")
 ## Run zero-shot detection on a view
 zsd = foo.get_operator("@jacobmarks/zero_shot_prediction/zero_shot_detect")
 view = dataset.take(10)
-zsd(
+await zsd(
     view,
     labels=["license plate"],
-    model="OwlViT",
-    field="owlvit_license_plate",
+    model_name="OwlViT",
+    label_field="owlvit_license_plate",
 )
 ```
 

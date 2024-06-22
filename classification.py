@@ -197,6 +197,15 @@ CLASSIFICATION_MODEL_TYPES = {
 def build_classification_models_dict():
     cms = {}
 
+    if not OpenCLIP_activator():
+        cms["CLIP (OpenAI)"] = {
+            "activator": CLIP_activator,
+            "model": CLIPZeroShotModel,
+            "submodels": None,
+            "name": "CLIP (OpenAI)",
+        }
+        return cms
+
     if Align_activator():
         cms["ALIGN"] = {
             "activator": Align_activator,
@@ -212,15 +221,6 @@ def build_classification_models_dict():
             "submodels": None,
             "name": "AltCLIP",
         }
-
-    if not OpenCLIP_activator():
-        cms["CLIP (OpenAI)"] = {
-            "activator": CLIP_activator,
-            "model": CLIPZeroShotModel,
-            "submodels": None,
-            "name": "CLIP (OpenAI)",
-        }
-        return cms
 
     for key, value in CLASSIFICATION_MODEL_TYPES.items():
         cms[key] = {

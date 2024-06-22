@@ -326,7 +326,7 @@ class ZeroShotTasks(foo.Operator):
         model_name = ctx.params.get(
             f"model_choice_{chosen_task}", active_models[0]
         )
-        model_name = model_name.split("(")[0].strip()
+        model_name = model_name.split("(")[0].strip().replace("-", "").lower()
         inputs.str(
             f"label_field_{chosen_task}_{model_name}",
             label="Label Field",
@@ -343,7 +343,7 @@ class ZeroShotTasks(foo.Operator):
         task = ctx.params.get("task_choices", "classification")
         active_models = _get_active_models(task)
         model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
-        mn = model_name.split("(")[0].strip()
+        mn = model_name.split("(")[0].strip().lower().replace("-", "")
         if task == "instance_segmentation":
             model_name = (
                 ctx.params[f"model_choice_detection"] + " + " + model_name
@@ -419,7 +419,7 @@ def _input_control_flow(ctx, task):
         )
 
     model_name = ctx.params.get(f"model_choice_{task}", active_models[0])
-    mn = model_name.split("(")[0].strip().lower()
+    mn = model_name.split("(")[0].strip().lower().replace("-", "")
     inputs.str(
         f"label_field_{mn}",
         label="Label Field",
@@ -433,8 +433,6 @@ def _input_control_flow(ctx, task):
 
 
 def _execute_control_flow(ctx, task):
-    with open("/tmp/params.txt", "w") as f:
-        f.write(str(ctx.params))
     view = ctx.target_view()
     model_name = ctx.params.get(f"model_choice_{task}", "CLIP")
     mn = _model_name_to_field_name(model_name).split("(")[0].strip().lower()
@@ -486,27 +484,15 @@ def _match_model_name(model_name, model_names):
     )
 
 
-def _handle_calling(
-    uri,
-    sample_collection,
-    model_name,
-    labels,
-    labels_file,
-    label_field,
-    delegate,
-    confidence=None,
-):
-    ctx = dict(view=sample_collection.view())
-
-    task = NAME_TO_TASK[uri.split("/")[-1]]
-
+def _resolve_model_name(task, model_name):
     if model_name is None:
-        model_name = list(MODEL_LISTS[task].keys())[0]
+        return list(MODEL_LISTS[task].keys())[0]
     elif model_name not in MODEL_LISTS[task]:
-        model_name = _match_model_name(
-            model_name, list(MODEL_LISTS[task].keys())
-        )
+        return _match_model_name(model_name, list(MODEL_LISTS[task].keys()))
+    return model_name
 
+
+def _resolve_labels(labels, labels_file):
     if labels is None and labels_file is None:
         raise ValueError("Must provide either labels or labels_file")
 
@@ -520,14 +506,40 @@ def _handle_calling(
             labels = [label.strip() for label in f.readlines()]
         labels = ", ".join(labels)
 
+    return labels
+
+
+def _resolve_label_field(model_name, label_field):
     if label_field is None:
         label_field = _model_name_to_field_name(model_name)
+    label_field_name = f"label_field_{_model_name_to_field_name(model_name)}"
 
-    label_field_name = f"label_field_{model_name}"
+    return label_field, label_field_name
+
+
+def _handle_calling(
+    uri,
+    sample_collection,
+    model_name=None,
+    labels=None,
+    labels_file=None,
+    label_field=None,
+    delegate=False,
+    confidence=None,
+):
+    ctx = dict(view=sample_collection.view())
+
+    task = NAME_TO_TASK[uri.split("/")[-1]]
+
+    model_name = _resolve_model_name(task, model_name)
+    labels = _resolve_labels(labels, labels_file)
+
+    label_field, label_field_name = _resolve_label_field(
+        model_name, label_field
+    )
 
     params = dict(
         target=sample_collection,
-        model_choice=model_name,
         label_input_choices="direct",
         delegate=delegate,
         labels=labels,
@@ -535,6 +547,7 @@ def _handle_calling(
     if confidence is not None:
         params["confidence"] = confidence
     params[label_field_name] = label_field
+    params[f"model_choice_{task}"] = model_name
 
     return foo.execute_operator(uri, ctx, params=params)
 
@@ -572,11 +585,11 @@ class ZeroShotClassify(foo.Operator):
         return _handle_calling(
             self.uri,
             sample_collection,
-            model_name,
-            labels,
-            labels_file,
-            label_field,
-            delegate,
+            model_name=model_name,
+            labels=labels,
+            labels_file=labels_file,
+            label_field=label_field,
+            delegate=delegate,
         )
 
     def list_models(self):
@@ -623,11 +636,11 @@ class ZeroShotDetect(foo.Operator):
         return _handle_calling(
             self.uri,
             sample_collection,
-            model_name,
-            labels,
-            labels_file,
-            label_field,
-            delegate,
+            model_name=model_name,
+            labels=labels,
+            labels_file=labels_file,
+            label_field=label_field,
+            delegate=delegate,
             confidence=confidence,
         )
 
@@ -669,12 +682,12 @@ class ZeroShotInstanceSegment(foo.Operator):
         return _handle_calling(
             self.uri,
             sample_collection,
-            model_name,
-            labels,
-            labels_file,
-            label_field,
-            delegate,
-            confidence=0.2,
+            model_name=model_name,
+            labels=labels,
+            labels_file=labels_file,
+            label_field=label_field,
+            delegate=delegate,
+            confidence=confidence,
         )
 
     def list_models(self):
@@ -714,11 +727,11 @@ class ZeroShotSemanticSegment(foo.Operator):
         return _handle_calling(
             self.uri,
             sample_collection,
-            model_name,
-            labels,
-            labels_file,
-            label_field,
-            delegate,
+            model_name=model_name,
+            labels=labels,
+            labels_file=labels_file,
+            label_field=label_field,
+            delegate=delegate,
         )
 
     def list_models(self):

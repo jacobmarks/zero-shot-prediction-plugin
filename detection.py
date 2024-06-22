@@ -148,20 +148,20 @@ def YOLOWorld_activator():
 def build_detection_models_dict():
     dms = {}
 
-    if OwlViT_activator():
-        dms["OwlViT"] = {
-            "activator": OwlViT_activator,
-            "model": OwlViTZeroShotModel,
-            "submodels": None,
-            "name": "OwlViT",
-        }
-
     if YOLOWorld_activator():
         dms["YOLO-World"] = {
             "activator": YOLOWorld_activator,
             "model": YOLOWorldModel,
             "submodels": YOLO_WORLD_PRETRAINS,
             "name": "YOLO-World",
+        }
+
+    if OwlViT_activator():
+        dms["OwlViT"] = {
+            "activator": OwlViT_activator,
+            "model": OwlViTZeroShotModel,
+            "submodels": None,
+            "name": "OwlViT",
         }
 
     if GroundingDINO_activator():
