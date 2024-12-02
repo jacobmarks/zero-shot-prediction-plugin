@@ -46,10 +46,8 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
-AIMV2_MODELS = [
-    ("apple-aimv2", "aimv2-large-patch14-native"),
-    ("apple-aimv2", "aimv2-large-patch14-224-lit"),
-]
+AIMV2_MODELS = ["aimv2-large-patch14-native", "aimv2-large-patch14-224-lit"]
+
 
 def CLIPZeroShotModel(config):
     """
@@ -184,7 +182,7 @@ class AltCLIPZeroShotModel(Model):
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).numpy()
+        probs = logits_per_image.softmax(dim=1).detach().numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -294,7 +292,7 @@ class AlignZeroShotModel(Model):
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).numpy()
+        probs = logits_per_image.softmax(dim=1).detach().numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -459,6 +457,8 @@ class AIMV2ZeroShotModel(Model):
             return_tensors="pt"
         )
 
+        inputs.to(self.device)
+
         with torch.no_grad():
             outputs = self.model(**inputs)
 
@@ -468,7 +468,7 @@ class AIMV2ZeroShotModel(Model):
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).numpy()
+        probs = logits_per_image.softmax(dim=1).detach().numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -523,67 +523,46 @@ CLASSIFICATION_MODEL_TYPES = {
 
 def build_classification_models_dict():
     """
-    Builds a dictionary of classification models available for use.
-
-    This function constructs a dictionary where each key is a string representing
-    the name of a classification model type, and the value is a dictionary containing
-    the following keys:
-        - "activator": A function that checks if the model's dependencies are available.
-        - "model": A function that initializes and returns the model.
-        - "submodels": Additional model configurations or variants, if any.
-        - "name": The display name of the model.
-
-    The function first checks if the OpenCLIP library is available. If not, it adds
-    the "CLIP (OpenAI)" model to the dictionary and returns it. If OpenCLIP is available,
-    it proceeds to add other models like "ALIGN" and "AltCLIP" based on their respective
-    activators. Finally, it iterates over the `CLASSIFICATION_MODEL_TYPES` to add
-    models that use the OpenCLIP framework.
+    Builds a dictionary of classification models available for use, including all models
+    whose activators return True.
 
     Returns:
-        dict: A dictionary of available classification models.
+        dict: A dictionary of available classification models, where each key is a model name
+        and each value contains the model's activator, model class, submodels, and display name.
     """
-    cms = {}
-
-    if not OpenCLIP_activator():
-        cms["CLIP (OpenAI)"] = {
+    cms={}
+    # Check individual models
+    model_configs = {
+        "CLIP (OpenAI)": {
             "activator": CLIP_activator,
             "model": CLIPZeroShotModel,
             "submodels": None,
             "name": "CLIP (OpenAI)",
-        }
-        return cms
-
-    if Align_activator():
-        cms["ALIGN"] = {
+        },
+        "ALIGN": {
             "activator": Align_activator,
             "model": AlignZeroShotModel,
             "submodels": None,
             "name": "ALIGN",
-        }
-
-    if AltCLIP_activator():
-        cms["AltCLIP"] = {
+        },
+        "AltCLIP": {
             "activator": AltCLIP_activator,
             "model": AltCLIPZeroShotModel,
             "submodels": None,
             "name": "AltCLIP",
-        }
-
-    if AIMV2_activator():
-        cms["AIM-V2"] = {
+        },
+        "Apple AIMv2": {
             "activator": AIMV2_activator,
             "model": AIMV2ZeroShotModel,
-            "submodels": None,
-            "name": "AIM-V2",
-        }
+            "submodels": AIMV2_MODELS,
+            "name": "Apple AIMv2",
+        },
+    }
 
-    for key, value in CLASSIFICATION_MODEL_TYPES.items():
-        cms[key] = {
-            "activator": OpenCLIP_activator,
-            "model": OpenCLIPZeroShotModel,
-            "submodels": value,
-            "name": key,
-        }
+    # Add each model whose activator returns True
+    for model_name, config in model_configs.items():
+        if config["activator"]():
+            cms[model_name] = config
 
     return cms
 
