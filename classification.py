@@ -46,8 +46,26 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
+AIMV2_MODELS = [
+    ("apple-aimv2", "aimv2-large-patch14-native"),
+    ("apple-aimv2", "aimv2-large-patch14-224-lit"),
+]
 
 def CLIPZeroShotModel(config):
+    """
+    This function loads a zero-shot classification model using the CLIP architecture.
+    It utilizes the FiftyOne Zoo to load a pre-trained model based on the provided
+    configuration.
+
+    Args:
+        config (dict): A dictionary containing configuration parameters for the model.
+            - categories (list, optional): A list of categories for classification.
+            - clip_model (str, optional): The architecture of the CLIP model to use.
+            - pretrained (str, optional): The pre-trained weights to use.
+
+    Returns:
+        Model: A loaded CLIP zero-shot classification model ready for inference.
+    """
     cats = config.get("categories", None)
     clip_model = config.get("clip_model", "ViT-B-32")
     pretrained = config.get("pretrained", "openai")
@@ -64,11 +82,52 @@ def CLIPZeroShotModel(config):
 
 
 def CLIP_activator():
+    """
+    Determines if the CLIP model can be activated.
+
+    This function checks for the availability of the necessary
+    components to activate the CLIP model. It returns True if
+    the model can be activated, otherwise False.
+
+    Returns:
+        bool: True if the CLIP model can be activated, False otherwise.
+    """
     return True
 
-
 class AltCLIPZeroShotModel(Model):
+    """
+    This class implements a zero-shot classification model using the AltCLIP architecture.
+    It leverages the AltCLIP model from the Hugging Face Transformers library to perform
+    image classification without requiring task-specific training data.
+
+    Args:
+        config (dict): A dictionary containing configuration parameters for the model.
+            - categories (list, optional): A list of categories for classification.
+
+    Attributes:
+        categories (list): The list of categories for classification.
+        candidate_labels (list): A list of text prompts for each category.
+        model (AltCLIPModel): The pre-trained AltCLIP model.
+        processor (AltCLIPProcessor): The processor for preparing inputs for the model.
+
+    Methods:
+        media_type: Returns the type of media the model is designed to process.
+        _predict(image): Performs prediction on a single image.
+        predict(args): Converts input data to an image and performs prediction.
+        _predict_all(images): Performs prediction on a list of images.
+    """
     def __init__(self, config):
+        """
+        Initializes the AltCLIPZeroShotModel with the given configuration.
+
+        This constructor sets up the model by initializing the categories
+        and candidate labels for classification. It also loads the pre-trained
+        AltCLIP model and processor from the Hugging Face Transformers library.
+
+        Args:
+            config (dict): A dictionary containing configuration parameters for the model.
+                - categories (list, optional): A list of categories for classification.
+        """
         self.categories = config.get("categories", None)
         self.candidate_labels = [
             f"a photo of a {cat}" for cat in self.categories
@@ -79,11 +138,34 @@ class AltCLIPZeroShotModel(Model):
         self.model = AltCLIPModel.from_pretrained("BAAI/AltCLIP")
         self.processor = AltCLIPProcessor.from_pretrained("BAAI/AltCLIP")
 
+        # Set up device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # Move model to appropriate device and set to eval mode
+        self.model = self.model.to(self.device)
+        self.model.eval()
+
     @property
     def media_type(self):
         return "image"
 
     def _predict(self, image):
+        """
+        Performs prediction on a single image.
+
+        This method processes the input image using the AltCLIPProcessor
+        and performs a forward pass through the AltCLIPModel to obtain
+        classification probabilities for each category. It returns a
+        FiftyOne Classification object containing the predicted label,
+        logits, and confidence score.
+
+        Args:
+            image (PIL.Image): The input image to classify.
+
+        Returns:
+            fo.Classification: The classification result containing the
+            predicted label, logits, and confidence score.
+        """
         inputs = self.processor(
             text=self.candidate_labels,
             images=image,
@@ -104,6 +186,20 @@ class AltCLIPZeroShotModel(Model):
         )
 
     def predict(self, args):
+        """
+        Converts input data to an image and performs prediction.
+
+        This method takes input data, converts it into a PIL image,
+        and then uses the `_predict` method to perform classification.
+        It returns the prediction results as a FiftyOne Classification object.
+
+        Args:
+            args (numpy.ndarray): The input data to be converted into an image.
+
+        Returns:
+            fo.Classification: The classification result containing the
+            predicted label, logits, and confidence score.
+        """
         image = Image.fromarray(args)
         predictions = self._predict(image)
         return predictions
@@ -117,6 +213,26 @@ def AltCLIP_activator():
 
 
 class AlignZeroShotModel(Model):
+    """
+    AlignZeroShotModel is a class for zero-shot image classification using the Align model.
+
+    This class leverages the Align model from the `transformers` library to perform
+    zero-shot classification on images. It initializes with a configuration that
+    specifies the categories for classification. The model processes input images
+    and predicts the most likely category from the provided list.
+
+    Attributes:
+        categories (list): A list of category labels for classification.
+        candidate_labels (list): A list of formatted labels for the Align model.
+        processor (AlignProcessor): The processor for preparing inputs for the model.
+        model (AlignModel): The pre-trained Align model for classification.
+
+    Methods:
+        media_type: Returns the type of media the model works with, which is "image".
+        _predict(image): Performs prediction on a single image.
+        predict(args): Converts input data to an image and performs prediction.
+        _predict_all(images): Performs prediction on a list of images.
+    """
     def __init__(self, config):
         self.categories = config.get("categories", None)
         self.candidate_labels = [
@@ -130,11 +246,34 @@ class AlignZeroShotModel(Model):
         )
         self.model = AlignModel.from_pretrained("kakaobrain/align-base")
 
+        # Set up device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        # Move model to appropriate device and set to eval mode
+        self.model = self.model.to(self.device)
+        self.model.eval()
+
     @property
     def media_type(self):
         return "image"
 
     def _predict(self, image):
+        """
+        Performs prediction on a single image.
+
+        This method takes an image as input and processes it using the Align model
+        to predict the most likely category from the pre-defined list of categories.
+        It uses the processor to prepare the input and the model to generate predictions.
+        The method returns a `fiftyone.core.labels.Classification` object containing
+        the predicted label, logits, and confidence score.
+
+        Args:
+            image (PIL.Image.Image): The input image for classification.
+
+        Returns:
+            fiftyone.core.labels.Classification: The classification result with the
+            predicted label, logits, and confidence score.
+        """
         inputs = self.processor(
             text=self.candidate_labels, images=image, return_tensors="pt"
         )
@@ -152,6 +291,21 @@ class AlignZeroShotModel(Model):
         )
 
     def predict(self, args):
+        """
+        Predicts the category of the given image.
+
+        This method takes an image in the form of a numpy array, converts it
+        to a PIL Image, and then uses the `_predict` method to classify the
+        image. The classification result is returned as a 
+        `fiftyone.core.labels.Classification` object.
+
+        Args:
+            args (np.ndarray): The input image as a numpy array.
+
+        Returns:
+            fiftyone.core.labels.Classification: The classification result with
+            the predicted label, logits, and confidence score.
+        """
         image = Image.fromarray(args)
         predictions = self._predict(image)
         return predictions
@@ -165,6 +319,24 @@ def Align_activator():
 
 
 def OpenCLIPZeroShotModel(config):
+    """
+    Initializes and returns an OpenCLIP zero-shot model based on the provided configuration.
+
+    This function loads a pre-trained OpenCLIP model using the specified configuration
+    parameters. The model is initialized with a text prompt and a set of categories
+    for zero-shot classification tasks.
+
+    Args:
+        config (dict): A dictionary containing configuration parameters for the model.
+            - "categories" (list, optional): A list of category names for classification.
+            - "clip_model" (str, optional): The name of the CLIP model architecture to use.
+              Defaults to "ViT-B-32".
+            - "pretrained" (str, optional): The name of the pre-trained weights to load.
+              Defaults to "openai".
+
+    Returns:
+        An instance of the OpenCLIP model configured for zero-shot classification.
+    """
     cats = config.get("categories", None)
     clip_model = config.get("clip_model", "ViT-B-32")
     pretrained = config.get("pretrained", "openai")
@@ -178,7 +350,6 @@ def OpenCLIPZeroShotModel(config):
     )
 
     return model
-
 
 def OpenCLIP_activator():
     return find_spec("open_clip") is not None
@@ -195,6 +366,26 @@ CLASSIFICATION_MODEL_TYPES = {
 
 
 def build_classification_models_dict():
+    """
+    Builds a dictionary of classification models available for use.
+
+    This function constructs a dictionary where each key is a string representing
+    the name of a classification model type, and the value is a dictionary containing
+    the following keys:
+        - "activator": A function that checks if the model's dependencies are available.
+        - "model": A function that initializes and returns the model.
+        - "submodels": Additional model configurations or variants, if any.
+        - "name": The display name of the model.
+
+    The function first checks if the OpenCLIP library is available. If not, it adds
+    the "CLIP (OpenAI)" model to the dictionary and returns it. If OpenCLIP is available,
+    it proceeds to add other models like "ALIGN" and "AltCLIP" based on their respective
+    activators. Finally, it iterates over the `CLASSIFICATION_MODEL_TYPES` to add
+    models that use the OpenCLIP framework.
+
+    Returns:
+        dict: A dictionary of available classification models.
+    """
     cms = {}
 
     if not OpenCLIP_activator():
