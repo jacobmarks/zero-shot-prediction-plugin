@@ -173,10 +173,17 @@ class AltCLIPZeroShotModel(Model):
             padding=True,
         )
 
+        inputs.to(self.device)
+
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
+        
+         # Move to CPU only if necessary
+        if logits_per_image.device.type != 'cpu':
+            logits_per_image = logits_per_image.cpu()
+            
         probs = logits_per_image.softmax(dim=1).numpy()
 
         return fo.Classification(
@@ -282,6 +289,11 @@ class AlignZeroShotModel(Model):
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
+
+         # Move to CPU only if necessary
+        if logits_per_image.device.type != 'cpu':
+            logits_per_image = logits_per_image.cpu()
+            
         probs = logits_per_image.softmax(dim=1).numpy()
 
         return fo.Classification(
@@ -451,7 +463,12 @@ class AIMV2ZeroShotModel(Model):
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
-        probs = logits_per_image.softmax(dim=1).detach().numpy()
+
+         # Move to CPU only if necessary
+        if logits_per_image.device.type != 'cpu':
+            logits_per_image = logits_per_image.cpu()
+            
+        probs = logits_per_image.softmax(dim=1).numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
