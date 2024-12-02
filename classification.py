@@ -355,6 +355,144 @@ def OpenCLIP_activator():
     return find_spec("open_clip") is not None
 
 
+class AIMV2ZeroShotModel(Model):
+    """Zero-shot image classification model using Apple's AIM-V2.
+
+    AIM-V2 (Apple Image Models V2) are vision-language models from Apple that achieve
+    state-of-the-art performance on various vision tasks.
+
+    Available models:
+        - apple/aimv2-large-patch14-native: Native variant
+        - apple/aimv2-large-patch14-224-lit: LiT-tuned variant
+
+    Args:
+        config (dict): Configuration dictionary containing:
+            - categories (list): List of category labels for classification
+            - model_name (str, optional): Full model name including organization.
+              Defaults to "apple/aimv2-large-patch14-224-lit"
+    
+    Attributes:
+        categories (list): Available classification categories
+        candidate_labels (list): Text prompts generated from categories
+        model (AutoModel): The underlying AIM-V2 model
+        processor (AutoProcessor): Processor for preparing inputs
+    """
+
+    def __init__(self, config):
+        self.categories = config.get("categories", None)
+        if self.categories is None:
+            raise ValueError("Categories must be provided in config")
+            
+        self.candidate_labels = [
+            f"a photo of a {cat}" for cat in self.categories
+        ]
+        
+        model_name = config.get(
+            "model_name", 
+            "apple/aimv2-large-patch14-224-lit"
+        )
+        
+        # Validate model name
+        valid_models = [
+            "apple/aimv2-large-patch14-native",
+            "apple/aimv2-large-patch14-224-lit"
+        ]
+        if model_name not in valid_models:
+            raise ValueError(
+                f"Model {model_name} not supported. Choose from: {valid_models}"
+            )
+
+        from transformers import AutoProcessor, AutoModel
+        # Set up device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # Initialize model and processor
+        self.processor = AutoProcessor.from_pretrained(model_name)
+        self.model = AutoModel.from_pretrained(
+            model_name,
+            trust_remote_code=True
+        )
+        
+        # Move model to appropriate device and set to eval mode
+        self.model = self.model.to(self.device)
+        self.model.eval()
+        
+    @property
+    def media_type(self):
+        """The type of media handled by this model.
+
+        Returns:
+            str: Always returns 'image'
+        """
+        return "image"
+
+    def _predict(self, image):
+        """Internal prediction method for a single image.
+
+        Args:
+            image (PIL.Image): Input image to classify
+
+        Returns:
+            fo.Classification: Classification result containing:
+                - label: Predicted category
+                - logits: Raw model outputs
+                - confidence: Prediction confidence score
+        """
+        inputs = self.processor(
+            text=self.candidate_labels,
+            images=image,
+            add_special_tokens=True,
+            truncation=True,
+            padding=True,
+            return_tensors="pt"
+        )
+
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+
+        logits_per_image = outputs.logits_per_image
+        probs = logits_per_image.softmax(dim=1).detach().numpy()
+
+        return fo.Classification(
+            label=self.categories[probs.argmax()],
+            logits=logits_per_image.squeeze().numpy(),
+            confidence=np.amax(probs[0]),
+        )
+
+    def predict(self, args):
+        """Public prediction interface for numpy array input.
+
+        Args:
+            args (np.ndarray): Input image as numpy array
+
+        Returns:
+            fo.Classification: Classification result
+        """
+        image = Image.fromarray(args)
+        predictions = self._predict(image)
+        return predictions
+
+    def _predict_all(self, images):
+        """Batch prediction for multiple images.
+
+        Args:
+            images (list): List of images to classify
+
+        Returns:
+            list: List of fo.Classification results
+        """
+        return [self._predict(image) for image in images]
+
+
+def AIMV2_activator():
+    """Check if required dependencies for AIM-V2 are available."""
+    try:
+        from transformers import AutoProcessor, AutoModel
+        return True
+    except ImportError:
+        return False
+
+
 CLASSIFICATION_MODEL_TYPES = {
     "CLIP (OpenAI)": OPENAI_CLIP_MODELS,
     "CLIPA": CLIPA_MODELS,
@@ -362,6 +500,7 @@ CLASSIFICATION_MODEL_TYPES = {
     "EVA-CLIP": EVA_CLIP_MODELS,
     "MetaCLIP": META_CLIP_MODELS,
     "SigLIP": SIGLIP_MODELS,
+    "Apple AIMv2": AIMV2_MODELS
 }
 
 
@@ -411,6 +550,14 @@ def build_classification_models_dict():
             "model": AltCLIPZeroShotModel,
             "submodels": None,
             "name": "AltCLIP",
+        }
+
+    if AIMV2_activator():
+        cms["AIM-V2"] = {
+            "activator": AIMV2_activator,
+            "model": AIMV2ZeroShotModel,
+            "submodels": None,
+            "name": "AIM-V2",
         }
 
     for key, value in CLASSIFICATION_MODEL_TYPES.items():
