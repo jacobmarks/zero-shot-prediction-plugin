@@ -506,7 +506,7 @@ def AIMV2_activator():
         return False
 
 
-CLASSIFICATION_MODEL_TYPES = {
+OPEN_CLIP_MODEL_TYPES = {
     "CLIPA": CLIPA_MODELS,
     "DFN CLIP": DFN_CLIP_MODELS,
     "EVA-CLIP": EVA_CLIP_MODELS,
@@ -570,7 +570,7 @@ def build_classification_models_dict():
         }
 
     # Add OpenCLIP models if available
-    for key, value in CLASSIFICATION_MODEL_TYPES.items():
+    for key, value in OPEN_CLIP_MODEL_TYPES.items():
         cms[key] = {
             "activator": OpenCLIP_activator,
             "model": OpenCLIPZeroShotModel,
