@@ -46,8 +46,7 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
-AIMV2_MODELS = ["aimv2-large-patch14-native", "aimv2-large-patch14-224-lit"]
-
+AIMV2_MODELS = [ "aimv2-large-patch14-native", "aimv2-large-patch14-224-lit"]
 
 def CLIPZeroShotModel(config):
     """
@@ -511,61 +510,77 @@ def AIMV2_activator():
 
 
 CLASSIFICATION_MODEL_TYPES = {
-    "CLIP (OpenAI)": OPENAI_CLIP_MODELS,
     "CLIPA": CLIPA_MODELS,
     "DFN CLIP": DFN_CLIP_MODELS,
     "EVA-CLIP": EVA_CLIP_MODELS,
     "MetaCLIP": META_CLIP_MODELS,
     "SigLIP": SIGLIP_MODELS,
-    "Apple AIMv2": AIMV2_MODELS
 }
 
 
 def build_classification_models_dict():
     """
-    Builds a dictionary of classification models available for use, including all models
-    whose activators return True.
+    Builds a dictionary of classification models available for use.
+
+    This function constructs a dictionary where each key is a string representing
+    the name of a classification model type, and the value is a dictionary containing
+    the following keys:
+        - "activator": A function that checks if the model's dependencies are available.
+        - "model": A function that initializes and returns the model.
+        - "submodels": Additional model configurations or variants, if any.
+        - "name": The display name of the model.
 
     Returns:
-        dict: A dictionary of available classification models, where each key is a model name
-        and each value contains the model's activator, model class, submodels, and display name.
+        dict: A dictionary of available classification models.
     """
-    cms={}
-    # Check individual models
-    model_configs = {
-        "CLIP (OpenAI)": {
+    cms = {}
+
+    # Add CLIP (OpenAI) if available
+    if CLIP_activator():
+        cms["CLIP (OpenAI)"] = {
             "activator": CLIP_activator,
             "model": CLIPZeroShotModel,
             "submodels": None,
             "name": "CLIP (OpenAI)",
-        },
-        "ALIGN": {
+        }
+
+    # Add ALIGN if available
+    if Align_activator():
+        cms["ALIGN"] = {
             "activator": Align_activator,
             "model": AlignZeroShotModel,
             "submodels": None,
             "name": "ALIGN",
-        },
-        "AltCLIP": {
+        }
+
+    # Add AltCLIP if available
+    if AltCLIP_activator():
+        cms["AltCLIP"] = {
             "activator": AltCLIP_activator,
             "model": AltCLIPZeroShotModel,
             "submodels": None,
             "name": "AltCLIP",
-        },
-        "Apple AIMv2": {
+        }
+
+    # Add Apple AIMv2 if available
+    if AIMV2_activator():
+        cms["Apple AIMv2"] = {
             "activator": AIMV2_activator,
             "model": AIMV2ZeroShotModel,
             "submodels": AIMV2_MODELS,
             "name": "Apple AIMv2",
-        },
-    }
+        }
 
-    # Add each model whose activator returns True
-    for model_name, config in model_configs.items():
-        if config["activator"]():
-            cms[model_name] = config
+    # Add OpenCLIP models if available
+    for key, value in CLASSIFICATION_MODEL_TYPES.items():
+        cms[key] = {
+            "activator": OpenCLIP_activator,
+            "model": OpenCLIPZeroShotModel,
+            "submodels": value,
+            "name": key,
+        }
 
     return cms
-
 
 CLASSIFICATION_MODELS = build_classification_models_dict()
 
