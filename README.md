@@ -13,6 +13,7 @@ Given a list of label classes, which you can input either manually, separated by
 
 ### Updates
 - 🆕 **2024-12-03**: Added support for Apple AIMv2 Zero Shot Model (courtesy of @harpreetsahota204)
+- 🆕 **2024-12-03**: Added GPU support for ALIGN, AltCLIP, Apple AIMv2 (courtesy of @harpreetsahota204)
 - **2024-06-22**: Updated interface for Python operator execution
 - **2024-05-30**: Added
   - support for Grounding DINO for object detection and instance segmentation
