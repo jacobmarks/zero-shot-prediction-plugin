@@ -393,23 +393,13 @@ class AIMV2ZeroShotModel(Model):
             raise ValueError("Categories must be provided in config")
             
         self.candidate_labels = [
-            f"a photo of a {cat}" for cat in self.categories
+            f"Picture of a {cat}." for cat in self.categories
         ]
         
         model_name = config.get(
             "model_name", 
             "apple/aimv2-large-patch14-224-lit"
         )
-        
-        # Validate model name
-        valid_models = [
-            "apple/aimv2-large-patch14-native",
-            "apple/aimv2-large-patch14-224-lit"
-        ]
-        if model_name not in valid_models:
-            raise ValueError(
-                f"Model {model_name} not supported. Choose from: {valid_models}"
-            )
 
         from transformers import AutoProcessor, AutoModel
         # Set up device
