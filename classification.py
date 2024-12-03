@@ -46,7 +46,7 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
-AIMV2_MODELS = [ "aimv2-large-patch14-native", "aimv2-large-patch14-224-lit"]
+AIMV2_MODELS = ["aimv2-large-patch14-224-lit"]
 
 def CLIPZeroShotModel(config):
     """
@@ -167,21 +167,21 @@ class AltCLIPZeroShotModel(Model):
             text=self.candidate_labels,
             images=image,
             return_tensors="pt",
-            padding=True,
+            padding=True
         )
 
-        inputs.to(self.device)
+        inputs = inputs.to(self.device)
 
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
-        
-         # Move to CPU only if necessary
+
+        # Move to CPU only if necessary
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).detach().numpy()
+        probs = logits_per_image.softmax(dim=1).numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -245,9 +245,7 @@ class AlignZeroShotModel(Model):
 
         from transformers import AlignProcessor, AlignModel
 
-        self.processor = AlignProcessor.from_pretrained(
-            "kakaobrain/align-base"
-        )
+        self.processor = AlignProcessor.from_pretrained("kakaobrain/align-base")
         self.model = AlignModel.from_pretrained("kakaobrain/align-base")
 
         # Set up device
@@ -279,19 +277,23 @@ class AlignZeroShotModel(Model):
             predicted label, logits, and confidence score.
         """
         inputs = self.processor(
-            text=self.candidate_labels, images=image, return_tensors="pt"
+            text=self.candidate_labels, 
+            images=image, 
+            return_tensors="pt"
         )
+
+        inputs = inputs.to(self.device)
 
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
 
-         # Move to CPU only if necessary
+        # Move to CPU only if necessary
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).detach().numpy()
+        probs = logits_per_image.softmax(dim=1).numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -400,13 +402,18 @@ class AIMV2ZeroShotModel(Model):
             "model_name", 
             "apple/aimv2-large-patch14-224-lit"
         )
-
+        
         from transformers import AutoProcessor, AutoModel
+
         # Set up device
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Initialize model and processor
-        self.processor = AutoProcessor.from_pretrained(model_name)
+        self.processor = AutoProcessor.from_pretrained(
+            model_name,
+            trust_remote_code=True
+            )
+        
         self.model = AutoModel.from_pretrained(
             model_name,
             trust_remote_code=True
@@ -446,18 +453,18 @@ class AIMV2ZeroShotModel(Model):
             return_tensors="pt"
         )
 
-        inputs.to(self.device)
+        inputs = inputs.to(self.device)
 
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         logits_per_image = outputs.logits_per_image
 
-         # Move to CPU only if necessary
+        # Move to CPU only if necessary
         if logits_per_image.device.type != 'cpu':
             logits_per_image = logits_per_image.cpu()
             
-        probs = logits_per_image.softmax(dim=1).detach().numpy()
+        probs = logits_per_image.softmax(dim=-1).numpy()
 
         return fo.Classification(
             label=self.categories[probs.argmax()],
@@ -499,7 +506,7 @@ def AIMV2_activator():
         return False
 
 
-OPEN_CLIP_MODEL_TYPES = {
+CLASSIFICATION_MODEL_TYPES = {
     "CLIPA": CLIPA_MODELS,
     "DFN CLIP": DFN_CLIP_MODELS,
     "EVA-CLIP": EVA_CLIP_MODELS,
@@ -526,13 +533,14 @@ def build_classification_models_dict():
     cms = {}
 
     # Add CLIP (OpenAI) if available
-    if CLIP_activator():
+    if not OpenCLIP_activator():
         cms["CLIP (OpenAI)"] = {
             "activator": CLIP_activator,
             "model": CLIPZeroShotModel,
             "submodels": None,
             "name": "CLIP (OpenAI)",
         }
+        return cms
 
     # Add ALIGN if available
     if Align_activator():
@@ -562,7 +570,7 @@ def build_classification_models_dict():
         }
 
     # Add OpenCLIP models if available
-    for key, value in OPEN_CLIP_MODEL_TYPES.items():
+    for key, value in CLASSIFICATION_MODEL_TYPES.items():
         cms[key] = {
             "activator": OpenCLIP_activator,
             "model": OpenCLIPZeroShotModel,
