@@ -12,7 +12,7 @@ This plugin allows you to perform zero-shot prediction on your dataset for the f
 Given a list of label classes, which you can input either manually, separated by commas, or by uploading a text file, the plugin will perform zero-shot prediction on your dataset for the specified task and add the results to the dataset under a new field, which you can specify.
 
 ### Updates
-
+- 🆕 **2024-12-03**: Added support for Apple AIMv2 Zero Shot Model (courtesy of @harpreetsahota204)
 - **2024-06-22**: Updated interface for Python operator execution
 - **2024-05-30**: Added
   - support for Grounding DINO for object detection and instance segmentation
@@ -39,6 +39,7 @@ As a starting point, this plugin comes with at least one zero-shot model per tas
 
 - [ALIGN](https://huggingface.co/docs/transformers/model_doc/align)
 - [AltCLIP](https://huggingface.co/docs/transformers/model_doc/altclip)
+- 🆕 [Apple AIMv2](https://huggingface.co/apple/aimv2-large-patch14-224-lit)
 - [CLIP](https://github.com/openai/CLIP): (OpenAI)
 - [CLIPA](https://github.com/UCSC-VLAA/CLIPA)
 - [DFN CLIP](https://huggingface.co/apple/DFN5B-CLIP-ViT-H-14-378): Data Filtering Networks
