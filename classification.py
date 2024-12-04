@@ -533,14 +533,13 @@ def build_classification_models_dict():
     cms = {}
 
     # Add CLIP (OpenAI) if available
-    if not OpenCLIP_activator():
+    if OpenCLIP_activator():
         cms["CLIP (OpenAI)"] = {
             "activator": CLIP_activator,
             "model": CLIPZeroShotModel,
             "submodels": None,
             "name": "CLIP (OpenAI)",
         }
-        return cms
 
     # Add ALIGN if available
     if Align_activator():
