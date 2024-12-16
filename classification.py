@@ -46,7 +46,19 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
-AIMV2_MODELS = ["aimv2-large-patch14-224-lit"]
+def get_device():
+    """Helper function to determine the best available device."""
+    if torch.cuda.is_available():
+        device = "cuda"
+        print(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = "mps"
+        print("Using Apple Silicon (MPS) device")
+    else:
+        device = "cpu"
+        print("Using CPU device")
+    return device
+
 
 def CLIPZeroShotModel(config):
     """
@@ -136,7 +148,7 @@ class AltCLIPZeroShotModel(Model):
         self.processor = AltCLIPProcessor.from_pretrained("BAAI/AltCLIP")
 
         # Set up device
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = get_device()
 
         # Move model to appropriate device and set to eval mode
         self.model = self.model.to(self.device)
@@ -249,7 +261,7 @@ class AlignZeroShotModel(Model):
         self.model = AlignModel.from_pretrained("kakaobrain/align-base")
 
         # Set up device
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = get_device()
         
         # Move model to appropriate device and set to eval mode
         self.model = self.model.to(self.device)
@@ -398,15 +410,12 @@ class AIMV2ZeroShotModel(Model):
             f"Picture of a {cat}." for cat in self.categories
         ]
         
-        model_name = config.get(
-            "model_name", 
-            "apple/aimv2-large-patch14-224-lit"
-        )
+        model_name = "aimv2-large-patch14-224-lit"
         
         from transformers import AutoProcessor, AutoModel
 
         # Set up device
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = get_device()
 
         # Initialize model and processor
         self.processor = AutoProcessor.from_pretrained(
@@ -564,7 +573,7 @@ def build_classification_models_dict():
         cms["Apple AIMv2"] = {
             "activator": AIMV2_activator,
             "model": AIMV2ZeroShotModel,
-            "submodels": AIMV2_MODELS,
+            "submodels": None,
             "name": "Apple AIMv2",
         }
 
