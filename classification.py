@@ -46,6 +46,8 @@ EVA_CLIP_MODELS = [
     ("merged2b_s4b_b131k", "EVA02-L-14"),
 ]
 
+AIMV2_MODELS = ["aimv2-large-patch14-224-lit"]
+
 def get_device():
     """Helper function to determine the best available device."""
     if torch.cuda.is_available():
@@ -377,7 +379,6 @@ def OpenCLIPZeroShotModel(config):
 def OpenCLIP_activator():
     return find_spec("open_clip") is not None
 
-
 class AIMV2ZeroShotModel(Model):
     """Zero-shot image classification model using Apple's AIM-V2.
 
@@ -385,7 +386,6 @@ class AIMV2ZeroShotModel(Model):
     state-of-the-art performance on various vision tasks.
 
     Available models:
-        - apple/aimv2-large-patch14-native: Native variant
         - apple/aimv2-large-patch14-224-lit: LiT-tuned variant
 
     Args:
@@ -410,12 +410,15 @@ class AIMV2ZeroShotModel(Model):
             f"Picture of a {cat}." for cat in self.categories
         ]
         
-        model_name = "aimv2-large-patch14-224-lit"
+        model_name = config.get(
+            "model_name", 
+            "apple/aimv2-large-patch14-224-lit"
+        )
         
         from transformers import AutoProcessor, AutoModel
 
         # Set up device
-        self.device = get_device()
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Initialize model and processor
         self.processor = AutoProcessor.from_pretrained(
@@ -570,11 +573,11 @@ def build_classification_models_dict():
 
     # Add Apple AIMv2 if available
     if AIMV2_activator():
-        cms["Apple AIMv2"] = {
+        cms["AIMv2"] = {
             "activator": AIMV2_activator,
             "model": AIMV2ZeroShotModel,
             "submodels": None,
-            "name": "Apple AIMv2",
+            "name": "AIMv2",
         }
 
     # Add OpenCLIP models if available
