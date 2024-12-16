@@ -48,6 +48,20 @@ EVA_CLIP_MODELS = [
 
 AIMV2_MODELS = ["aimv2-large-patch14-224-lit"]
 
+def get_device():
+    """Helper function to determine the best available device."""
+    if torch.cuda.is_available():
+        device = "cuda"
+        print(f"Using CUDA device: {torch.cuda.get_device_name(0)}")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = "mps"
+        print("Using Apple Silicon (MPS) device")
+    else:
+        device = "cpu"
+        print("Using CPU device")
+    return device
+
+
 def CLIPZeroShotModel(config):
     """
     This function loads a zero-shot classification model using the CLIP architecture.
@@ -136,7 +150,7 @@ class AltCLIPZeroShotModel(Model):
         self.processor = AltCLIPProcessor.from_pretrained("BAAI/AltCLIP")
 
         # Set up device
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = get_device()
 
         # Move model to appropriate device and set to eval mode
         self.model = self.model.to(self.device)
@@ -249,7 +263,7 @@ class AlignZeroShotModel(Model):
         self.model = AlignModel.from_pretrained("kakaobrain/align-base")
 
         # Set up device
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = get_device()
         
         # Move model to appropriate device and set to eval mode
         self.model = self.model.to(self.device)
@@ -365,7 +379,6 @@ def OpenCLIPZeroShotModel(config):
 def OpenCLIP_activator():
     return find_spec("open_clip") is not None
 
-
 class AIMV2ZeroShotModel(Model):
     """Zero-shot image classification model using Apple's AIM-V2.
 
@@ -373,7 +386,6 @@ class AIMV2ZeroShotModel(Model):
     state-of-the-art performance on various vision tasks.
 
     Available models:
-        - apple/aimv2-large-patch14-native: Native variant
         - apple/aimv2-large-patch14-224-lit: LiT-tuned variant
 
     Args:
@@ -561,11 +573,11 @@ def build_classification_models_dict():
 
     # Add Apple AIMv2 if available
     if AIMV2_activator():
-        cms["Apple AIMv2"] = {
+        cms["AIMv2"] = {
             "activator": AIMV2_activator,
             "model": AIMV2ZeroShotModel,
-            "submodels": AIMV2_MODELS,
-            "name": "Apple AIMv2",
+            "submodels": None,
+            "name": "AIMv2",
         }
 
     # Add OpenCLIP models if available

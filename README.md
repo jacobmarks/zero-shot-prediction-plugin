@@ -12,8 +12,8 @@ This plugin allows you to perform zero-shot prediction on your dataset for the f
 Given a list of label classes, which you can input either manually, separated by commas, or by uploading a text file, the plugin will perform zero-shot prediction on your dataset for the specified task and add the results to the dataset under a new field, which you can specify.
 
 ### Updates
-- 🆕 **2024-12-03**: Added support for Apple AIMv2 Zero Shot Model (courtesy of @harpreetsahota204)
-- 🆕 **2024-12-03**: Added GPU support for ALIGN, AltCLIP, Apple AIMv2 (courtesy of @harpreetsahota204)
+- 🆕 **2024-12-03**: Added support for Apple AIMv2 Zero Shot Model (courtesy of [@harpreetsahota204](https://github.com/harpreetsahota204))
+- 🆕 **2024-12-16**: Added MPS and GPU support for ALIGN, AltCLIP, Apple AIMv2 (courtesy of [@harpreetsahota204](https://github.com/harpreetsahota204))
 - **2024-06-22**: Updated interface for Python operator execution
 - **2024-05-30**: Added
   - support for Grounding DINO for object detection and instance segmentation
@@ -232,7 +232,7 @@ zsc(dataset, labels=["cat", "dog", "bird"])
 zsc(dataset, labels_file="/path/to/labels.txt")
 
 ## Specify the model to use, and the field to add the results to
-zsc(dataset, labels=["cat", "dog", "bird"], model="CLIP", field="predictions")
+zsc(dataset, labels=["cat", "dog", "bird"], model_name="CLIP", label_field="predictions")
 
 ## Run zero-shot detection on a view
 zsd = foo.get_operator("@jacobmarks/zero_shot_prediction/zero_shot_detect")
