@@ -539,7 +539,6 @@ def _handle_calling(
     )
 
     params = dict(
-        target=sample_collection,
         label_input_choices="direct",
         delegate=delegate,
         labels=labels,
